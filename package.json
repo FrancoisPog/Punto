@@ -1,0 +1,19 @@
+{
+  "name": "shifumichat",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "mocha ./test/*.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "express": "^4.17.1",
+    "socket.io": "^2.3.0"
+  },
+  "devDependencies": {
+    "mocha": "^8.2.0",
+    "request": "^2.88.2"
+  }
+}
