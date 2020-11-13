@@ -5,7 +5,7 @@ const server = app.listen(8080, function () {
   console.log("C'est parti ! En attente de connexion sur le port 8080...");
 });
 
-const Duel = require("./chifoumi").duel;
+const Chifoumi = require("./chifoumi");
 
 // Ecoute sur les websockets
 const io = require("socket.io").listen(server);
@@ -31,17 +31,7 @@ const clients = {}; // { id -> socket, ... }
  */
 function supprimer(id) {
   delete clients[id];
-}
-
-function formatList() {
-  return Object.keys(clients)
-    .map((c) => {
-      return {
-        pseudo: c,
-        score: clients[c].score,
-      };
-    })
-    .sort((a, b) => b.score - a.score);
+  Chifoumi.supprimer(id);
 }
 
 // Quand un client se connecte, on le note dans la console
@@ -61,17 +51,15 @@ io.on("connection", function (socket) {
       return;
     }
     // sinon on récupère son ID
+    debugger;
     currentID = id;
+    Chifoumi.ajouter(id);
     // initialisation
-    clients[currentID] = {
-      socket: socket,
-      score: 0,
-      duels: {},
-    };
+    clients[currentID] = socket;
     // log
     console.log("Nouvel utilisateur : " + currentID);
     // envoi d'un message de bienvenue à ce client
-    socket.emit("bienvenue", formatList());
+    socket.emit("bienvenue", Chifoumi.scoresJSON());
     // envoi aux autres clients
     socket.broadcast.emit("message", {
       from: null,
@@ -80,7 +68,7 @@ io.on("connection", function (socket) {
       date: Date.now(),
     });
     // envoi de la nouvelle liste à tous les clients connectés
-    socket.broadcast.emit("liste", formatList());
+    socket.broadcast.emit("liste", Chifoumi.scoresJSON());
   });
 
   /**
@@ -149,7 +137,7 @@ io.on("connection", function (socket) {
       // désinscription du client
       currentID = null;
       // envoi de la nouvelle liste pour mise à jour
-      socket.broadcast.emit("liste", formatList());
+      socket.broadcast.emit("liste", Chifoumi.scoresJSON());
     }
   });
 
@@ -169,86 +157,59 @@ io.on("connection", function (socket) {
       // désinscription du client
       currentID = null;
       // envoi de la nouvelle liste pour mise à jour
-      socket.broadcast.emit("liste", formatList());
+      socket.broadcast.emit("liste", Chifoumi.scoresJSON());
     }
   });
 
   socket.on("chifoumi", function ({ to, element }) {
-    // Incorrect user
-    if (clients[to] === undefined) {
-      socket.emit("chifoumi", {
-        text: "Utilisateur " + to + " inconnu",
-        date: Date.now(),
-      });
-      return;
-    }
-
-    // If no duel in progress
-    if (clients[currentID].duels[to] === undefined) {
-      let duel = new Duel(currentID, to);
-      clients[currentID].duels[to] = duel;
-      clients[to].duels[currentID] = duel;
-
-      console.log(`Chifoumi : Duel créé entre ${currentID} et ${to}`);
-      clients[to].socket.emit("chifoumi", {
-        text: `${currentID} te défie au Chifoumi`,
-        date: Date.now(),
-        buzz: true,
-      });
-    }
-
-    let duel = clients[currentID].duels[to];
-
-    let res = duel.play(currentID, element);
-    if (res === -3) {
-      socket.emit("chifoumi", {
-        text: `Vous avez déjà un duel en cours avec ${to}`,
-        date: Date.now(),
-      });
-      return;
-    } else if (res === -4) {
-      socket.emit("chifoumi", {
-        text: `Element incorrect : ${element}`,
-        date: Date.now(),
-      });
-      return;
-    }
-    console.log(`Chifoumi : ${currentID} à joué ${element}`);
-
-    if (duel.result === null) {
-      socket.emit("chifoumi", {
-        text: `Défi envoyé à ${to}`,
-        date: Date.now(),
-      });
-    } else {
-      let currentPlayerIsWinner = duel.result.winner === currentID;
-      let exAequo = duel.result.winner == null;
-      socket.emit("chifoumi", {
-        text:
-          duel.result.message +
-          (exAequo
-            ? ""
-            : currentPlayerIsWinner
-            ? " c'est gagné ! :grinning:"
-            : " c'est perdu ! :frowning_face:"),
-        date: Date.now(),
-      });
-      clients[to].socket.emit("chifoumi", {
-        text:
-          duel.result.message +
-          (exAequo
-            ? ""
-            : !currentPlayerIsWinner
-            ? " c'est gagné ! :grinning:"
-            : " c'est perdu ! :frowning_face:"),
-        date: Date.now(),
-      });
-      delete clients[currentID].duels[to];
-      delete clients[to].duels[currentID];
-      if (duel.result.winner) {
-        clients[duel.result.winner].score++;
-      }
-      io.sockets.emit("liste", formatList());
+    let res = Chifoumi.defier(currentID, to, element);
+    switch (res.status) {
+      case 1:
+        clients[to].emit("chifoumi", {
+          from: null,
+          to,
+          text: `${currentID} to défie`,
+          date: Date.now(),
+        });
+      case -1:
+      case -2:
+        socket.emit("chifoumi", {
+          from: 0,
+          to: currentID,
+          text: res.message,
+          date: Date.now(),
+        });
+        break;
+      case 0:
+        if (res.resultat.vainqueur == null) {
+          socket.emit("chifoumi", {
+            from: 0,
+            to: currentID,
+            text: res.resultat.message + " :no_mouth:",
+            date: Date.now(),
+          });
+          clients[to].emit("chifoumi", {
+            from: 0,
+            to: to,
+            text: res.resultat.message,
+            date: Date.now(),
+          });
+        } else {
+          clients[res.resultat.vainqueur].emit("chifoumi", {
+            from: 0,
+            to: res.resultat.vainqueur,
+            text: res.resultat.message + " - c'est gagné :grin:",
+            date: Date.now(),
+          });
+          clients[res.resultat.perdant].emit("chifoumi", {
+            from: 0,
+            to: res.resultat.perdant,
+            text: res.resultat.message + " - c'est perdu :frowning_face:",
+            date: Date.now(),
+          });
+          io.sockets.emit("liste", Chifoumi.scoresJSON());
+        }
+        break;
     }
   });
 });

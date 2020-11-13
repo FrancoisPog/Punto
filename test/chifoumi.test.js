@@ -1,70 +1,109 @@
-const assert = require("assert");
-const chifoumi = require("../chifoumi");
-const { it, describe, beforeEach } = require("mocha");
+// Assertions
+const assert = require("assert").strict;
 
-const Duel = chifoumi.duel;
+const chifoumi = require("../chifoumi.js");
 
-describe("Chifoumi", function () {
-  let duel;
-  beforeEach("Create a new duel", function () {
-    duel = new Duel("François", "Fanny");
+describe("Gestion des joueurs", function () {
+  it("doit pouvoir ajouter un nouveau joueur", function () {
+    assert.strictEqual(chifoumi.ajouter("fred"), true);
+    let score = JSON.parse(chifoumi.scoresJSON());
+    assert.strictEqual(score.fred, 0);
   });
 
-  describe("Result", function () {
-    it("No winner", function () {
-      assert(duel.result === null);
-    });
-
-    it("Good result", function () {
-      duel.play("François", "lizard");
-      duel.play("Fanny", "scissors");
-
-      assert.deepStrictEqual(duel.result, {
-        winner: "Fanny",
-        message: ":scissors: decapitate :lizard:",
-      });
-    });
-
-    it("Ex-aequo", function () {
-      duel.play("François", "paper");
-      duel.play("Fanny", "paper");
-
-      assert.deepStrictEqual(duel.result, {
-        winner: null,
-        message: ":paper: vs :paper:",
-      });
-    });
+  it("doit pouvoir refuser un joueur existant", function () {
+    assert.strictEqual(chifoumi.ajouter("fred"), false);
+    let score = JSON.parse(chifoumi.scoresJSON());
+    assert.strictEqual(score.fred, 0);
   });
 
-  describe("Get Player", function () {
-    it("Good name", function () {
-      assert.notStrictEqual(duel.getPlayer("François"), null);
-      assert.notStrictEqual(duel.getPlayer("Fanny"), null);
-    });
+  it("doit pouvoir supprimer un joueur existant", function () {
+    let scores = JSON.parse(chifoumi.scoresJSON());
+    assert.strictEqual(scores.fred, 0);
+    chifoumi.supprimer("fred");
+    scores = JSON.parse(chifoumi.scoresJSON());
+    assert.strictEqual(scores.fred, undefined);
+  });
+});
 
-    it("Bad name", function () {
-      assert.strictEqual(duel.getPlayer("Francois"), null);
-      assert.strictEqual(duel.getPlayer("Phanni"), null);
-    });
+describe("Gestion des défis", function () {
+  it("doit détecter que le joueur qui initie le défi n'existe pas", function () {
+    let res = chifoumi.defier("fred", "raph", "rock");
+    assert.strictEqual(res.status, -1);
+    assert.match(res.message, /fred/);
   });
 
-  describe("Play", function () {
-    it("Bad element", function () {
-      assert.strictEqual(duel.play("François", "fire"), -4);
-    });
+  it("doit détecter que le joueur qui est la cible du défi n'existe pas", function () {
+    chifoumi.ajouter("fred");
+    let res = chifoumi.defier("fred", "raph", "rock");
+    assert.strictEqual(res.status, -1);
+    assert.match(res.message, /raph/);
+  });
 
-    it("Bad player", function () {
-      assert.strictEqual(duel.play("Fraçois", "rock"), -2);
-    });
+  it("doit détecter que le choix du joueur n'est pas correct", function () {
+    chifoumi.ajouter("raph");
+    let res = chifoumi.defier("fred", "raph", "roc");
+    assert.strictEqual(res.status, -1);
+    assert.match(res.message, /roc(.)+incorrect/);
+  });
 
-    it("Null parameters", function () {
-      assert.strictEqual(duel.play(null, "lizard"), -1);
-      assert.strictEqual(duel.play("François", null), -1);
-    });
+  it("doit accepter un défi lancé pour la première fois", function () {
+    let res = chifoumi.defier("fred", "raph", "rock");
+    assert.strictEqual(res.status, 1);
+    assert.match(res.message, /Défi lancé(.)+raph/);
+  });
 
-    it("Already played", function () {
-      assert.strictEqual(duel.play("Fanny", "spock"), 0);
-      assert.strictEqual(duel.play("Fanny", "paper"), -3);
-    });
+  it("doit refuser de défier un adversaire dont on attend la réponse", function () {
+    let res = chifoumi.defier("fred", "raph", "scissors");
+    assert.strictEqual(res.status, -2);
+    assert.match(res.message, /défi(.)+déjà/);
+  });
+
+  it("doit accepter la réponse à un défi et déterminer le bon vainqueur", function () {
+    let res = chifoumi.defier("raph", "fred", "scissors");
+    assert.strictEqual(res.status, 0);
+    assert.strictEqual(res.resultat.vainqueur, "fred");
+    assert.strictEqual(res.resultat.perdant, "raph");
+    assert.match(res.resultat.message, /:rock:/);
+    assert.match(res.resultat.message, /:scissors:/);
+    assert.match(res.resultat.message, /crushes/);
+    let score = JSON.parse(chifoumi.scoresJSON());
+    assert.strictEqual(score.fred, 1);
+    assert.strictEqual(score.raph, 0);
+  });
+
+  it("doit accepter un nouveau défi une fois le premier terminé", function () {
+    let res = chifoumi.defier("fred", "raph", "scissors");
+    assert.strictEqual(res.status, 1);
+  });
+
+  it("doit détecter un match nul", function () {
+    let res = chifoumi.defier("raph", "fred", "scissors");
+    assert.strictEqual(res.status, 0);
+    let scoreAvant = chifoumi.scoresJSON();
+    assert.strictEqual(res.resultat.vainqueur, null);
+    assert.strictEqual(res.resultat.perdant, null);
+    assert.match(res.resultat.message, /égalité/);
+    assert.strictEqual(chifoumi.scoresJSON(), scoreAvant);
+  });
+
+  it("doit supprimer les défis associés à un utilisateur supprimé", function () {
+    chifoumi.ajouter("maman");
+    let res = chifoumi.defier("raph", "maman", "scissors");
+    assert.strictEqual(res.status, 1);
+    chifoumi.supprimer("raph");
+    let scores = JSON.parse(chifoumi.scoresJSON());
+    assert.strictEqual(scores.raph, undefined);
+    res = chifoumi.defier("raph", "fred", "rock");
+    assert.strictEqual(res.status, -1);
+    assert.match(res.message, /raph/);
+    res = chifoumi.defier("fred", "raph", "rock");
+    assert.strictEqual(res.status, -1);
+    assert.match(res.message, /raph/);
+  });
+
+  it("doit refuser un défi lancé à soi-même", function () {
+    let res = chifoumi.defier("fred", "fred", "rock");
+    assert.strictEqual(res.status, -1);
+    assert.match(res.message, /soi\-même/);
   });
 });

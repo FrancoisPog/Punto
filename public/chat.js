@@ -4,7 +4,6 @@ document.addEventListener("DOMContentLoaded", function (_e) {
   // Socket connection
   let sock = io.connect();
   let pseudo = null;
-  let list = [];
 
   // DOM Elements
   let content = document.getElementById("content");
@@ -221,7 +220,6 @@ document.addEventListener("DOMContentLoaded", function (_e) {
   sock.on("bienvenue", function (clientsList) {
     chatMain.innerHTML = "";
     chatMain.appendChild(AutoCompleteSmileys.dom);
-    list = clientsList;
     radContentScreen.checked = true;
     document.getElementById("login").textContent = pseudo;
     updateList();
@@ -231,8 +229,7 @@ document.addEventListener("DOMContentLoaded", function (_e) {
   });
 
   sock.on("liste", function (clientsList) {
-    list = clientsList;
-    updateList();
+    updateList(clientsList);
   });
 
   sock.on("message", function ({ from, to, text, date }) {
@@ -306,16 +303,18 @@ document.addEventListener("DOMContentLoaded", function (_e) {
   /**
    * Update the connected clients list
    */
-  function updateList() {
+  function updateList(list) {
+    //list = JSON.parse(list)
+    console.log(list);
     asideClients.innerHTML = "";
-    list.forEach((client) => {
+    Object.keys(list).forEach((client) => {
       asideClients.appendChild(
         elt(
           "p",
           {
-            "data-score": client.score,
+            "data-score": list[client],
           },
-          client.pseudo
+          client
         )
       );
     });
