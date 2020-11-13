@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "mocha ./test/*.js"
+    "test": "mocha ./test/*.js",
+    "start": "node .",
+    "format": "prettier --write ."
   },
   "author": "",
   "license": "ISC",
@@ -13,6 +15,7 @@
     "socket.io": "^2.3.0"
   },
   "devDependencies": {
+    "eslint": "^7.13.0",
     "mocha": "^8.2.0",
     "request": "^2.88.2"
   }
