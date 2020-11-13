@@ -54,7 +54,7 @@ describe("Chifoumi", function () {
     });
 
     it("Bad player", function () {
-      assert.strictEqual(duel.play("Fraçois", "rock"), -2);
+      assert.strictEqual(duel.play("Fraçois", "rock"), -2000);
     });
 
     it("Null parameters", function () {
