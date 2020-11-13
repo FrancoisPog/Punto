@@ -1,6 +1,11 @@
 image: node:latest
 
+workflow:
+  rules:
+    - if: $CI_MERGE_REQUEST_ID # Execute jobs in merge request context
+
 test:
+  stage: test
   script:
     - npm install
     - npm run test
