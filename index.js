@@ -1,4 +1,3 @@
-// Chargement des modules
 const express = require("express");
 const app = express();
 const server = app.listen(8080, function () {
@@ -7,43 +6,29 @@ const server = app.listen(8080, function () {
 
 const Chifoumi = require("./chifoumi");
 
-// Ecoute sur les websockets
+// Listen web sockets
 const io = require("socket.io").listen(server);
 
-// Configuration d'express pour utiliser le répertoire "public"
+// Serve the public directory
 app.use(express.static("public"));
-// set up to
 app.get("/", function (req, res) {
   res.sendFile(__dirname + "/public/chat.html");
 });
 
-// déblocage requetes cross-origin
+// cors
 io.set("origins", "*:*");
 
-/***************************************************************
- *           Gestion des clients et des connexions
- ***************************************************************/
 const clients = {}; // { id -> socket, ... }
 
-/**
- *  Supprime les infos associées à l'utilisateur passé en paramètre.
- *  @param  {string}  id  l'identifiant de l'utilisateur à effacer
- */
-function supprimer(id) {
+function remove(id) {
   delete clients[id];
   Chifoumi.supprimer(id);
 }
 
-// Quand un client se connecte, on le note dans la console
 io.on("connection", function (socket) {
-  // message de debug
   console.log("Un client s'est connecté");
   let currentID = null;
 
-  /**
-   *  Doit être la première action après la connexion.
-   *  @param  id  string  l'identifiant saisi par le client
-   */
   socket.on("login", function (id) {
     // si le pseudo est déjà utilisé, on lui envoie l'erreur
     if (clients[id]) {
@@ -59,6 +44,7 @@ io.on("connection", function (socket) {
     // log
     console.log("Nouvel utilisateur : " + currentID);
     // envoi d'un message de bienvenue à ce client
+
     socket.emit("bienvenue", Chifoumi.scoresJSON());
     // envoi aux autres clients
     socket.broadcast.emit("message", {
@@ -71,10 +57,6 @@ io.on("connection", function (socket) {
     socket.broadcast.emit("liste", Chifoumi.scoresJSON());
   });
 
-  /**
-   *  Réception d'un message et transmission à tous.
-   *  @param  msg     Object  le message à transférer à tous
-   */
   socket.on("message", function (msg) {
     console.log("Reçu message : " + currentID);
     // si message privé, envoi seulement au destinataire
@@ -116,11 +98,6 @@ io.on("connection", function (socket) {
     }
   });
 
-  /**
-   *  Gestion des déconnexions
-   */
-
-  // fermeture
   socket.on("logout", function () {
     // si client était identifié (devrait toujours être le cas)
     if (currentID !== undefined) {
@@ -133,7 +110,7 @@ io.on("connection", function (socket) {
         date: Date.now(),
       });
       // suppression de l'entrée
-      supprimer(currentID);
+      remove(currentID);
       // désinscription du client
       currentID = null;
       // envoi de la nouvelle liste pour mise à jour
@@ -141,7 +118,6 @@ io.on("connection", function (socket) {
     }
   });
 
-  // déconnexion de la socket
   socket.on("disconnect", function () {
     // si client était identifié
     if (currentID !== undefined) {
@@ -153,7 +129,7 @@ io.on("connection", function (socket) {
         date: Date.now(),
       });
       // suppression de l'entrée
-      supprimer(currentID);
+      remove(currentID);
       // désinscription du client
       currentID = null;
       // envoi de la nouvelle liste pour mise à jour

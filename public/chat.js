@@ -222,7 +222,7 @@ document.addEventListener("DOMContentLoaded", function (_e) {
     chatMain.appendChild(AutoCompleteSmileys.dom);
     radContentScreen.checked = true;
     document.getElementById("login").textContent = pseudo;
-    updateList();
+    updateList(clientsList);
     if (pseudo.trim().toLowerCase() === "fred") {
       guacamole();
     }
@@ -304,8 +304,8 @@ document.addEventListener("DOMContentLoaded", function (_e) {
    * Update the connected clients list
    */
   function updateList(list) {
-    //list = JSON.parse(list)
-    console.log(list);
+    list = JSON.parse(list);
+
     asideClients.innerHTML = "";
     Object.keys(list).forEach((client) => {
       asideClients.appendChild(

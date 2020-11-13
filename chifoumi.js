@@ -42,7 +42,7 @@ function defier(joueur1, joueur2, choixJ1) {
     };
   }
   // si on se défie soi-même
-  if (joueur1 == joueur2) {
+  if (joueur1 === joueur2) {
     return { status: -1, message: "Impossible de se défier soi-même." };
   }
   // si le joueur1 est déjà en train de défier le joueur2
@@ -93,7 +93,7 @@ function scoresJSON() {
  */
 function bataille(joueur1, choix1, joueur2, choix2) {
   // cas d'un match nul
-  if (choix1 == choix2) {
+  if (choix1 === choix2) {
     let matchNul = `:${choix1}: vs. :${choix2}: - égalité`;
     // supprime le défi chez joueur1
     delete defis[joueur1][joueur2];
@@ -102,7 +102,7 @@ function bataille(joueur1, choix1, joueur2, choix2) {
 
   // compare les mains et détermine le vainqueur et le perdant
   let vainqueur = beats[choix1][choix2] ? joueur1 : joueur2;
-  let perdant = vainqueur == joueur1 ? joueur2 : joueur1;
+  let perdant = vainqueur === joueur1 ? joueur2 : joueur1;
   // notifie le vainqueur et le perdant
   let resume = beats[choix1][choix2]
     ? `:${choix1}: ${beats[choix1][choix2]} :${choix2}:`
