@@ -7,11 +7,6 @@ stages:
   - test
   - deploy
 
-install_dependencies:
-  stage: .pre
-  script:
-    - npm install
-
 test:
   stage: test
   rules:
