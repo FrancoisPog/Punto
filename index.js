@@ -1,7 +1,8 @@
 const express = require("express");
 const app = express();
-const server = app.listen(8080, function () {
-  console.log("C'est parti ! En attente de connexion sur le port 8080...");
+const port = process.env.PORT || 8080;
+const server = app.listen(port, function () {
+  console.log("C'est parti ! En attente de connexion sur le port" + port);
 });
 
 const Chifoumi = require("./chifoumi");
