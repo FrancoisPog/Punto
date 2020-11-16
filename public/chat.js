@@ -1,6 +1,6 @@
 "use strict";
 
-document.addEventListener("DOMContentLoaded", function (_e) {
+document.addEventListener("DOMContentLoaded", function () {
   // Socket connection
   let sock = io.connect();
   let pseudo = null;
@@ -17,6 +17,11 @@ document.addEventListener("DOMContentLoaded", function (_e) {
   let messageInput = document.getElementById("monMessage");
   let btnSend = document.getElementById("btnEnvoyer");
 
+  // Display login screen
+  radLogScreen.checked = true;
+  pseudoInput.focus();
+
+  // Commands history system
   let history = {
     commands: [],
     index: -1,
@@ -34,6 +39,7 @@ document.addEventListener("DOMContentLoaded", function (_e) {
     },
   };
 
+  // Chifoumi autocomplete system
   let autoCompleteChifoumi = {
     elements: ["rock", "paper", "scissors", "spock", "lizard"],
     index: 0,
@@ -45,35 +51,14 @@ document.addEventListener("DOMContentLoaded", function (_e) {
     },
   };
 
-  // *****    LISTENERS     *****
+  // Chifoumi command shortcut
+  asideClients.ondblclick = chifoumiCommandShortcut;
 
-  asideClients.ondblclick = (e) => {
-    if (e.target.tagName === "P" && e.target.textContent !== pseudo) {
-      messageInput.value = `/chifoumi @${e.target.textContent} :`;
-      messageInput.focus();
-    }
-  };
-
-  // Display login screen
-  radLogScreen.checked = true;
-  pseudoInput.focus();
-
-  btnConnect.onclick = () => {
-    pseudo = pseudoInput.value.trim();
-    if (pseudo.length === 0) {
-      alert("Votre pseudo ne doit pas être vide ! ");
-      return;
-    }
-    if (!/^\S+$/.test(pseudo)) {
-      alert("Votre pseudo ne doit pas contenir d'espaces ! ");
-      return;
-    }
-    sock.emit("login", pseudo);
-  };
+  btnConnect.onclick = connect;
 
   pseudoInput.onkeydown = (e) => {
     if (e.key === "Enter") {
-      btnConnect.click();
+      connect();
     }
   };
 
@@ -82,38 +67,33 @@ document.addEventListener("DOMContentLoaded", function (_e) {
     radLogScreen.checked = true;
   };
 
-  messageInput.addEventListener("input", function (e) {
-    if (messageInput.value.startsWith("/")) {
-      AutoCompleteSmileys.setPause(true);
-    } else {
-      AutoCompleteSmileys.setPause(false);
-    }
-  });
-
-  messageInput.onclick = () => {
-    messageInput.dispatchEvent(new InputEvent("input"));
-  };
+  // Active the auto-complete smiley system at every interaction with the message input, if the content isn't a command
+  for (let event of ["input", "focus", "click", "keyup"]) {
+    messageInput.addEventListener(event, function (e) {
+      if (!messageInput.value.startsWith("/")) {
+        autoCompleteSmileys(e, messageInput);
+      }
+    });
+  }
 
   messageInput.addEventListener("keydown", function (e) {
-    if (AutoCompleteSmileys.isOpen()) {
+    if (isOpen()) {
       return;
     }
     if (e.key === "Enter" && messageInput.value.trim().length !== 0) {
       e.preventDefault();
-      btnSend.click();
+      sendMessage();
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       let command = history.prev();
       if (command) {
         messageInput.value = command;
-        messageInput.dispatchEvent(new InputEvent("input"));
       }
     } else if (e.key === "ArrowDown") {
       e.preventDefault();
       let command = history.next();
       if (command) {
         messageInput.value = command;
-        messageInput.dispatchEvent(new InputEvent("input"));
       } else {
         messageInput.value = "";
       }
@@ -121,94 +101,12 @@ document.addEventListener("DOMContentLoaded", function (_e) {
       e.preventDefault();
       let match = messageInput.value.match(/^\/chifoumi @[^\s]+ :/);
       if (match) {
-        messageInput.dispatchEvent(new InputEvent("input"));
         messageInput.value = `${match[0]}${autoCompleteChifoumi.next()}:`;
       }
     }
   });
 
-  btnSend.onclick = () => {
-    let text = messageInput.value.trim();
-    messageInput.value = "";
-
-    if (text !== history.commands[0]) {
-      history.commands.unshift(text);
-    }
-    history.index = -1;
-
-    if (text.startsWith("/")) {
-      if (/^\/chifoumi /.test(text)) {
-        let match = text.match(/^\/chifoumi ([^\s]+) ([^\s]+)$/);
-
-        if (match === null) {
-          addMessage(
-            "Nombre de paramètre incorrecte",
-            "[chifoumi]",
-            "chifoumi",
-            Date.now()
-          );
-          return;
-        }
-
-        let opponentMatch = match[1].match(/^@([^\s]+$)/);
-        if (opponentMatch === null) {
-          addMessage(
-            "Adversaire incorrecte ( @adversaire )",
-            "[chifoumi]",
-            "chifoumi",
-            Date.now()
-          );
-          return;
-        }
-
-        let opponent = opponentMatch[1];
-        if (opponent === pseudo) {
-          addMessage(
-            "Vous ne pouvez pas vous défier vous même",
-            "[chifoumi]",
-            "chifoumi",
-            Date.now()
-          );
-          return;
-        }
-
-        let elementMatch = match[2].match(
-          /^:(paper|rock|scissors|lizard|spock):$/
-        );
-        if (elementMatch === null) {
-          addMessage(
-            "Element incorrecte",
-            "[chifoumi]",
-            "chifoumi",
-            Date.now()
-          );
-          return;
-        }
-
-        let element = elementMatch[1];
-
-        sock.emit("chifoumi", {
-          to: opponent,
-          element: element,
-        });
-        return;
-      } else {
-        addMessage(
-          `Invalid command - "${text.match(/\/\S*/)}"`,
-          "[admin]",
-          "system",
-          Date.now()
-        );
-        return;
-      }
-    }
-    let to = text.match(/^@\S+/);
-
-    if (to) {
-      to = to[0].split("@")[1];
-    }
-    sock.emit("message", { to: to, text: text });
-  };
+  btnSend.onclick = sendMessage;
 
   // *****    SOCKECT     *****
 
@@ -219,7 +117,7 @@ document.addEventListener("DOMContentLoaded", function (_e) {
 
   sock.on("bienvenue", function (clientsList) {
     chatMain.innerHTML = "";
-    chatMain.appendChild(AutoCompleteSmileys.dom);
+    chatMain.appendChild(dom);
     radContentScreen.checked = true;
     document.getElementById("login").textContent = pseudo;
     updateList(clientsList);
@@ -263,9 +161,107 @@ document.addEventListener("DOMContentLoaded", function (_e) {
     }
   });
 
-  AutoCompleteSmileys.create(messageInput, elt("div", { id: "autocomplete" }));
-
   // *****    FUNCTIONS     *****
+
+  function chifoumiCommandShortcut(e) {
+    if (e.target.tagName === "P" && e.target.textContent !== pseudo) {
+      messageInput.value = `/chifoumi @${e.target.textContent} :`;
+      messageInput.focus();
+    }
+  }
+
+  function connect() {
+    pseudo = pseudoInput.value.trim();
+    if (pseudo.length === 0) {
+      alert("Votre pseudo ne doit pas être vide ! ");
+      return;
+    }
+    if (!/^\S+$/.test(pseudo)) {
+      alert("Votre pseudo ne doit pas contenir d'espaces ! ");
+      return;
+    }
+    sock.emit("login", pseudo);
+  }
+
+  function sendChifoumiCommand(text) {
+    let match = text.match(/^\/chifoumi ([^\s]+) ([^\s]+)$/);
+
+    if (match === null) {
+      addMessage(
+        "Nombre de paramètre incorrecte",
+        "[chifoumi]",
+        "chifoumi",
+        Date.now()
+      );
+      return;
+    }
+
+    let opponentMatch = match[1].match(/^@([^\s]+$)/);
+    if (opponentMatch === null) {
+      addMessage(
+        "Adversaire incorrecte ( @adversaire )",
+        "[chifoumi]",
+        "chifoumi",
+        Date.now()
+      );
+      return;
+    }
+
+    let opponent = opponentMatch[1];
+    if (opponent === pseudo) {
+      addMessage(
+        "Vous ne pouvez pas vous défier vous même",
+        "[chifoumi]",
+        "chifoumi",
+        Date.now()
+      );
+      return;
+    }
+
+    let elementMatch = match[2].match(/^:(paper|rock|scissors|lizard|spock):$/);
+    if (elementMatch === null) {
+      addMessage("Element incorrecte", "[chifoumi]", "chifoumi", Date.now());
+    }
+
+    let element = elementMatch[1];
+
+    sock.emit("chifoumi", {
+      to: opponent,
+      element: element,
+    });
+    return;
+  }
+
+  function sendMessage() {
+    let text = messageInput.value.trim();
+    messageInput.value = "";
+
+    if (text !== history.commands[0]) {
+      history.commands.unshift(text);
+    }
+    history.index = -1;
+
+    if (text.startsWith("/")) {
+      if (/^\/chifoumi /.test(text)) {
+        sendChifoumiCommand(text);
+        return;
+      } else {
+        addMessage(
+          `Invalid command - "${text.match(/\/\S*/)}"`,
+          "[admin]",
+          "system",
+          Date.now()
+        );
+        return;
+      }
+    }
+    let to = text.match(/^@\S+/);
+
+    if (to) {
+      to = to[0].split("@")[1];
+    }
+    sock.emit("message", { to: to, text: text });
+  }
 
   /**
    * Add a message into the chat content
