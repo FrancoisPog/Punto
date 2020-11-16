@@ -63,7 +63,7 @@ io.on("connection", function (socket) {
     if (msg.to != null) {
       if (clients[msg.to] !== undefined) {
         console.log(" --> message privé");
-        clients[msg.to].socket.emit("message", {
+        clients[msg.to].emit("message", {
           from: currentID,
           to: msg.to,
           text: msg.text,
