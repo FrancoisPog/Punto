@@ -21,7 +21,7 @@ let beats = {
  *  @param  {string}  joueur2     le pseudo du second joueur
  *  @param  {string}  choixJ1     le choix du joueur 1
  */
-function defier(joueur1, joueur2, choixJ1) {
+export function defier(joueur1, joueur2, choixJ1) {
   if (!defis[joueur1]) {
     return { status: -1, message: `Le joueur ${joueur1} n'existe pas.` };
   }
@@ -56,7 +56,7 @@ function defier(joueur1, joueur2, choixJ1) {
 /**
  *  Ajoute l'utilisateur à l'ensemble
  */
-function ajouter(pseudo) {
+export function ajouter(pseudo) {
   if (defis[pseudo]) {
     return false;
   }
@@ -68,7 +68,7 @@ function ajouter(pseudo) {
 /**
  *  Supprime l'utilisateur passé en paramètre et efface ses scores et ses défis (lancés ou en attente).
  */
-function supprimer(pseudo) {
+export function supprimer(pseudo) {
   // suppression des lanceurs de défis
   delete defis[pseudo];
   // suppression des scores
@@ -82,7 +82,7 @@ function supprimer(pseudo) {
 /**
  *  Renvoie un chaine JSON
  */
-function scoresJSON() {
+export function scoresJSON() {
   return JSON.stringify(scores);
 }
 
@@ -115,4 +115,3 @@ function bataille(joueur1, choix1, joueur2, choix2) {
 }
 
 // Définition des fonctions exportées
-module.exports = { ajouter, supprimer, defier, scoresJSON };

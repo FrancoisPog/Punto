@@ -2,6 +2,7 @@
   "name": "shifumichat",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "test": "mocha ./test/*.js",
     "start": "node .",
@@ -11,8 +12,10 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
+    "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "heroku": "^7.47.2",
+    "path": "^0.12.7",
     "socket.io": "^2.3.0"
   },
   "devDependencies": {

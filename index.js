@@ -1,14 +1,20 @@
-const express = require("express");
+import express from "express";
+import { supprimer, ajouter, scoresJSON, defier } from "./chifoumi.js";
+import socket_io from "socket.io";
+import dotenv from "dotenv";
+import path from "path";
+
+dotenv.config();
+const __dirname = path.resolve();
+
 const app = express();
 const port = process.env.PORT || 8080;
 const server = app.listen(port, function () {
   console.log("C'est parti ! En attente de connexion sur le port" + port);
 });
 
-const Chifoumi = require("./chifoumi");
-
 // Listen web sockets
-const io = require("socket.io").listen(server);
+const io = socket_io.listen(server);
 
 // Serve the public directory
 app.use(express.static("public"));
@@ -23,7 +29,7 @@ const clients = {}; // { id -> socket, ... }
 
 function remove(id) {
   delete clients[id];
-  Chifoumi.supprimer(id);
+  supprimer(id);
 }
 
 io.on("connection", function (socket) {
@@ -39,14 +45,14 @@ io.on("connection", function (socket) {
     // sinon on récupère son ID
     debugger;
     currentID = id;
-    Chifoumi.ajouter(id);
+    ajouter(id);
     // initialisation
     clients[currentID] = socket;
     // log
     console.log("Nouvel utilisateur : " + currentID);
     // envoi d'un message de bienvenue à ce client
 
-    socket.emit("bienvenue", Chifoumi.scoresJSON());
+    socket.emit("bienvenue", scoresJSON());
     // envoi aux autres clients
     socket.broadcast.emit("message", {
       from: null,
@@ -55,7 +61,7 @@ io.on("connection", function (socket) {
       date: Date.now(),
     });
     // envoi de la nouvelle liste à tous les clients connectés
-    socket.broadcast.emit("liste", Chifoumi.scoresJSON());
+    socket.broadcast.emit("liste", scoresJSON());
   });
 
   socket.on("message", function (msg) {
@@ -115,7 +121,7 @@ io.on("connection", function (socket) {
       // désinscription du client
       currentID = null;
       // envoi de la nouvelle liste pour mise à jour
-      socket.broadcast.emit("liste", Chifoumi.scoresJSON());
+      socket.broadcast.emit("liste", scoresJSON());
     }
   });
 
@@ -134,12 +140,12 @@ io.on("connection", function (socket) {
       // désinscription du client
       currentID = null;
       // envoi de la nouvelle liste pour mise à jour
-      socket.broadcast.emit("liste", Chifoumi.scoresJSON());
+      socket.broadcast.emit("liste", scoresJSON());
     }
   });
 
   socket.on("chifoumi", function ({ to, element }) {
-    let res = Chifoumi.defier(currentID, to, element);
+    let res = defier(currentID, to, element);
     switch (res.status) {
       case 1:
         clients[to].emit("chifoumi", {
@@ -184,7 +190,7 @@ io.on("connection", function (socket) {
             text: res.resultat.message + " - c'est perdu :frowning_face:",
             date: Date.now(),
           });
-          io.sockets.emit("liste", Chifoumi.scoresJSON());
+          io.sockets.emit("liste", scoresJSON());
         }
         break;
     }
