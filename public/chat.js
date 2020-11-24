@@ -1,8 +1,11 @@
 "use strict";
 
+var esock;
+
 document.addEventListener("DOMContentLoaded", function () {
   // Socket connection
   let sock = io.connect();
+  esock = sock;
   let pseudo = null;
 
   // DOM Elements
@@ -161,6 +164,15 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
+ 
+
+  sock.on("punto",function(res){
+    console.log(res);
+    
+    
+  })
+
+
   // *****    FUNCTIONS     *****
 
   function chifoumiCommandShortcut(e) {
@@ -316,3 +328,4 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 });
+

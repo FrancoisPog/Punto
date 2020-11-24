@@ -1,12 +1,12 @@
 {
-  "name": "shifumichat",
+  "name": "punto_chat",
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "mocha ./test/*.js",
+    "test": "export NODE_ENV=test; mocha ./test/*.js; export NODE_ENV= ",
     "start": "node .",
-    "format": "prettier --write ."
+    "format": "prettier --version ;prettier --write ."
   },
   "author": "",
   "license": "ISC",
