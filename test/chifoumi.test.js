@@ -1,7 +1,7 @@
 // Assertions
 import { strict as assert } from "assert";
 
-import { ajouter, scoresJSON, supprimer, defier } from "../chifoumi.js";
+import { ajouter, scoresJSON, supprimer, defier } from "../games/chifoumi.js";
 
 describe("Gestion des joueurs", function () {
   it("doit pouvoir ajouter un nouveau joueur", function () {

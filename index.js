@@ -1,5 +1,7 @@
+"use_strict"
 import express from "express";
-import { supprimer, ajouter, scoresJSON, defier } from "./chifoumi.js";
+import { supprimer, ajouter, scoresJSON, defier } from "./games/chifoumi.js";
+import * as Punto from "./games/punto.js";
 import socket_io from "socket.io";
 import dotenv from "dotenv";
 import path from "path";
@@ -195,4 +197,275 @@ io.on("connection", function (socket) {
         break;
     }
   });
+
+  socket.on("punto", function (req) {
+    switch (req.action) {
+      case "create": {
+        createGamePunto(req);
+        break;
+      }
+      case "invite": {
+        invitePlayerPunto(req);
+        break;
+      }
+      case "join": {
+        joinGamePunto(req);
+        break;
+      }
+      case "launch": {
+        launchGamePunto(req);
+        break;
+      }
+      case "play" : {
+        playGamePunto(req);
+        break;
+      }
+      case 'data' : {
+        gameDataPunto(req)
+        break
+      }
+      case 'card' : {
+        getCardPunto(req)
+        break;
+      }
+    }
+  });
+
+  function createGamePunto(req) {
+    let id = Punto.createGame(currentID);
+    console.log("Nouvelle partie créée par " + currentID + " : " + id);
+    socket.emit("punto", { req, status: 0, game: id });
+  }
+
+  function invitePlayerPunto(req) {
+    let game = Number(req.game);
+    let player = req.player
+    if (!game || !player) {
+      console.log(
+        `Impossible d'inviter ${req.player} dans la partie ${game} : argument undefined`
+      );
+      socket.emit("punto", { req, status: -1, content: "Server error" });
+      return;
+    }
+
+    let res = Punto.invitePlayer(game, player);
+
+    if (res !== 0) {
+      let content;
+      switch (res) {
+        case -1: {
+          content = "Cette partie n'existe pas";
+          break;
+        }
+        case -2: {
+          content = "Vous ne pouvez plus inviter de joueur : 4 joueurs maximum";
+          break;
+        }
+        case -3: {
+          content =
+            "Vous ne pouvez plus inviter de joueur une fois la partie lancée";
+          break;
+        }
+        default : {
+          content = 'server error'
+        }
+      }
+
+      socket.emit("punto", { req, status: res, content });
+      return;
+    }
+
+    socket.emit("punto", { req, status: 0 });
+  }
+
+  function joinGamePunto(req){
+    let game = Number(req.game)
+    if(!game || !req.player){
+      console.log(
+        `Impossible pour ${req.player} de joindre la partie ${game} : argument undefined`
+      );
+      socket.emit("punto", { req, status: -1, content: "Server error" });
+      return;
+    }
+  
+
+    let res = Punto.joinGame(game, player);
+    if (res !== 0) {
+      let content;
+      switch (res) {
+        case -1: {
+          content = "Cette partie n'existe pas";
+          break;
+        }
+        case -2: {
+          content = "Vous n'êtes pas inviter à cette partie";
+          break;
+        }
+        case -3: {
+          content =
+            "Vous ne pouvez pas rejoindre une partie une fois lancée";
+          break;
+        }
+        default : {
+          content = "server error"
+        }
+      }
+
+      socket.emit("punto", { req, status: res, content });
+      return;
+    }
+
+    socket.emit("punto", { req, status: 0 });
+  }
+
+  function launchGamePunto(req){
+    let game = Number(req.game)
+    if(!game){
+      console.log(
+        `[launchGamePunto] : game id undefined`
+      );
+      socket.emit("punto", { req, status: -1, content: "Server error" });
+      return;
+    }
+
+    let res = Punto.launchGame(game);
+    if (res !== 0) {
+      let content;
+      switch (res) {
+        case -1: {
+          content = "Cette partie n'existe pas";
+          break;
+        }
+        case -2: {
+          content = "Trop peu de joueur sont prêt pour lancer cette partie : 2 minimum";
+          break;
+        }
+        default : {
+          content = "Server error"
+        }
+      }
+
+      socket.emit("punto", { req, status: res, content });
+      return;
+    }
+
+    socket.emit("punto", { req, status: 0 });
+  }
+
+  function playGamePunto(req){
+    let game = Number(req.game);
+    let index = Number(req.index);
+
+    if(!game || !game.player || !index){
+      console.log(
+        `[playGamePunto] : arguments undefined`
+      );
+      socket.emit("punto", { req, status: -1, content: "Server error" });
+      return;
+    }
+
+    let res = Punto.play(game);
+
+    if(res !== 0){
+      let content;
+      switch (res) {
+        case -1: {
+          content = "Cette partie n'existe pas";
+          break;
+        }
+        case -2: {
+          content = "Ce joueur ne participe pas à cette partie";
+          break;
+        }
+        case -3 : {
+          content = "Cette carte ne peut pas être posé ici"
+          break
+        }
+        case 1 : {
+          content = "La manche est terminée"
+          break
+        }
+      }
+
+      socket.emit("punto", { req, status: res, content });
+      return;
+    }
+
+    socket.emit("punto", { req, status: 0 });
+
+  }
+
+  function gameDataPunto(req){
+    let game = Number(req.game)
+    if(!game){
+      console.log(
+        `Impossible d'obtenir les infos de la partie ${game} : argument undefined`
+      );
+      socket.emit("punto", { req, status: -1, content: "Server error" });
+      return;
+    }
+
+    let res = Punto.gameData(game);
+    if(typeof res !== 'string'){
+      let content;
+      switch (res) {
+        case -1:{
+          content = "Cette partie n'existe pas"
+          break;
+        }
+      
+        default:{
+          content = "server error"
+          break;
+        }
+      }
+
+      socket.emit("punto", { req, status: res, content });
+
+      return;
+    }
+
+    socket.emit("punto", {req,status : 0,content : res})
+  }
+
+  function getCardPunto(req){
+    let game = Number(req.game)
+    if(!game || !req.player){
+      console.log(
+        `Impossible pour ${req.player} de joindre la partie ${game} : argument undefined`
+      );
+      socket.emit("punto", { req, status: -1, content: "Server error" });
+      return;
+    }
+
+    let res = Punto.getCard(game,player)
+    if(typeof res !== 'string'){
+      switch (res) {
+        case -1:{
+          content = "Cette partie n'existe pas"
+          break;
+        }
+        case -2:{
+          content = "Ce joueur ne participe pas à cette partie"
+          break;
+        }
+        case -3:{
+          content = "Impossible de voir sa carte avant son tour"
+          break;
+        }
+        default:{
+          content = "server error"
+          break;
+        }
+      }
+
+      socket.emit("punto", { req, status: res, content });
+
+      return;
+    }
+
+    socket.emit("punto", {req,status : 0,content : res})
+  }
+
+  
 });
