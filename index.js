@@ -1,18 +1,20 @@
 "use_strict"
 import express from "express";
-import { supprimer, ajouter, scoresJSON, defier } from "./games/chifoumi.js";
-import * as Punto from "./games/punto.js";
-import socket_io from "socket.io";
 import dotenv from "dotenv";
 import path from "path";
+import socket_io from "socket.io";
+
+import { supprimer, ajouter, scoresJSON, defier } from "./games/chifoumi.js";
+import * as Punto from "./games/punto.js";
 
 dotenv.config();
 const __dirname = path.resolve();
 
 const app = express();
 const port = process.env.PORT || 8080;
+
 const server = app.listen(port, function () {
-  console.log("C'est parti ! En attente de connexion sur le port" + port);
+  console.log("C'est parti ! En attente de connexion sur le port " + port);
 });
 
 // Listen web sockets
@@ -199,6 +201,9 @@ io.on("connection", function (socket) {
   });
 
   socket.on("punto", function (req) {
+    if(!req || !req.action){
+      socket.emit("punto", { req, status: -1, content: "Server error" })
+    }
     switch (req.action) {
       case "create": {
         createGamePunto(req);
@@ -280,9 +285,10 @@ io.on("connection", function (socket) {
 
   function joinGamePunto(req){
     let game = Number(req.game)
-    if(!game || !req.player){
+    let player = req.player;
+    if(!game || !player){
       console.log(
-        `Impossible pour ${req.player} de joindre la partie ${game} : argument undefined`
+        `Impossible pour ${player} de joindre la partie ${game} : argument undefined`
       );
       socket.emit("punto", { req, status: -1, content: "Server error" });
       return;
@@ -355,8 +361,9 @@ io.on("connection", function (socket) {
   function playGamePunto(req){
     let game = Number(req.game);
     let index = Number(req.index);
+    let player = req.player;
 
-    if(!game || !game.player || !index){
+    if(!game || !player || !index){
       console.log(
         `[playGamePunto] : arguments undefined`
       );
@@ -364,7 +371,7 @@ io.on("connection", function (socket) {
       return;
     }
 
-    let res = Punto.play(game);
+    let res = Punto.play(game,player,index);
 
     if(res !== 0){
       let content;
@@ -430,7 +437,8 @@ io.on("connection", function (socket) {
 
   function getCardPunto(req){
     let game = Number(req.game)
-    if(!game || !req.player){
+    let player = req.player;
+    if(!game || !player){
       console.log(
         `Impossible pour ${req.player} de joindre la partie ${game} : argument undefined`
       );

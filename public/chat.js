@@ -256,16 +256,17 @@ document.addEventListener("DOMContentLoaded", function () {
     if (text.startsWith("/")) {
       if (/^\/chifoumi /.test(text)) {
         sendChifoumiCommand(text);
-        return;
-      } else {
+      } else if(/^\/punto /.test(text)) {
+        sendPuntoCommand(text);        
+      }else{
         addMessage(
           `Invalid command - "${text.match(/\/\S*/)}"`,
           "[admin]",
           "system",
           Date.now()
         );
-        return;
       }
+      return;
     }
     let to = text.match(/^@\S+/);
 
@@ -273,6 +274,38 @@ document.addEventListener("DOMContentLoaded", function () {
       to = to[0].split("@")[1];
     }
     sock.emit("message", { to: to, text: text });
+  }
+
+  function sendPuntoCommand(text){
+    text = text.trim()
+    let match = text.match(/^\/punto\s+(\S+)\s+(\S+)\s+(\S+)$/)
+    console.table(match)
+
+    // if(/^\/punto\s+create$/.test(text)){
+    //   sock.emit('punto',{action : 'create'});
+    //   return;
+    // }
+
+    // if(/^\/punto\s+invite\s+\S+\s+\d+$/.test(text)){
+    //   let match = text.match(/\/punto\s+invite\s+(\S+)\s+(\d+)/);
+    //   console.log(match[1],match[2]);
+    //   sock.emit('punto',{action : 'invite', game : match[2], player : match[1]});
+    //   return;
+    // }
+
+    // if(/^\/punto\s+join\s+\d+$/.test(text)){
+    //   let match = text.match(/\/punto\s+join\s+(\d+)/);
+    //   console.log(match[1],match[2]);
+    //   sock.emit('punto',{action : 'join', game : match[1], player : pseudo});
+    //   return;
+    // }
+
+    // if(/^\/punto\s+data\s+\d+$/.test(text)){
+    //   let match = text.match(/\/punto\s+data\s+(\d+)/);
+    //   console.log(match[1],match[2]);
+    //   sock.emit('punto',{action : 'data', game : match[1]});
+    //   return;
+    // }
   }
 
   /**

@@ -170,25 +170,30 @@ div {
   background-color: beige;
   padding: 10px;
 }
-#content h2,
+nav,
 #content h3 {
   position: absolute;
-  background-color: inherit;
-  height: 22px;
-  padding: 5px;
+}
+
+nav h2{
+  background-color: white;
+  display: inline;
   line-height: 16px;
   font-size: 16px;
   font-weight: bold;
   border-radius: 5px 5px 0 0;
-  border-top: inherit;
-  border-left: inherit;
-  border-right: inherit;
+  border : grey 1px solid;
+  margin-right: 20px;
 }
-#content h2 {
+
+nav {
   top: -22px;
   left: -1px;
 }
 #content h3 {
+  height: 22px;
+  padding: 5px;
+  background-color: inherit;
   right: -11px;
   top: -12px;
   transform-origin: left center;
@@ -363,3 +368,4 @@ input[type="radio"]:checked + div {
 #autocomplete p + p {
   border-top: black solid 1px;
 }
+

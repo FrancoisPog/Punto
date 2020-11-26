@@ -11,7 +11,8 @@
   </head>
 
   <body>
-    <input type="radio" name="btnScreen" id="radio1" checked />
+    
+    <input type="radio" name="btnScreen" id="radio1" checked/>
     <div id="logScreen">
       <div id="connexion">
         <p>
@@ -25,18 +26,35 @@
           <input type="button" value="Se connecter" id="btnConnecter" />
         </p>
       </div>
+
     </div>
     <input type="radio" name="btnScreen" id="radio2" />
     <div id="content">
-      <h2>Chat des L3 - <span id="login"></span></h2>
+      <nav>
+        <h2><label for="radio2">Chat des L3 - <span id="login"></span></label></h2>
+        <h2> <label for="punto1">Partie 1</label> </h2>
+      </nav>
+      
       <h3>Clients connectés</h3>
-      <aside></aside>
+      <aside>
+      </aside>
       <main></main>
       <footer>
         <input type="text" id="monMessage" />
         <input type="button" value="Envoyer" id="btnEnvoyer" />
         <input type="button" value="Quitter" id="btnQuitter" />
       </footer>
+    </div>
+    <input type="radio" name="btnScreen" id="punto1" />
+    <div id="content">
+      <nav>
+        <h2><label for="radio2">Chat des L3 - <span id="login"></span></label></h2>
+        <h2> <label for="punto1">Partie 1</label> </h2>
+      </nav>
+      
+      <h3>Partie 1 - Punto</h3>
+
+      <main></main>
     </div>
   </body>
 </html>
