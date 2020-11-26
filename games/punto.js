@@ -501,7 +501,7 @@ export function gameResult(gameId) {
  * Return the current card (JSON) of a player
  * @param {} gameId
  * @param {*} player
- * @returns {number} `-1` if the game doesn't exist, `-2` 
+ * @returns {number} `-1` if the game doesn't exist, `-2`
  */
 export function getCard(gameId, player) {
   gameId = Number(gameId);

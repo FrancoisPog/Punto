@@ -164,14 +164,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
- 
-
-  sock.on("punto",function(res){
+  sock.on("punto", function (res) {
     console.log(res);
-    
-    
-  })
-
+  });
 
   // *****    FUNCTIONS     *****
 
@@ -256,9 +251,9 @@ document.addEventListener("DOMContentLoaded", function () {
     if (text.startsWith("/")) {
       if (/^\/chifoumi /.test(text)) {
         sendChifoumiCommand(text);
-      } else if(/^\/punto /.test(text)) {
-        sendPuntoCommand(text);        
-      }else{
+      } else if (/^\/punto /.test(text)) {
+        sendPuntoCommand(text);
+      } else {
         addMessage(
           `Invalid command - "${text.match(/\/\S*/)}"`,
           "[admin]",
@@ -276,10 +271,10 @@ document.addEventListener("DOMContentLoaded", function () {
     sock.emit("message", { to: to, text: text });
   }
 
-  function sendPuntoCommand(text){
-    text = text.trim()
-    let match = text.match(/^\/punto\s+(\S+)\s+(\S+)\s+(\S+)$/)
-    console.table(match)
+  function sendPuntoCommand(text) {
+    text = text.trim();
+    let match = text.match(/^\/punto\s+(\S+)\s+(\S+)\s+(\S+)$/);
+    console.table(match);
 
     // if(/^\/punto\s+create$/.test(text)){
     //   sock.emit('punto',{action : 'create'});
@@ -361,4 +356,3 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 });
-
