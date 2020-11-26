@@ -17,7 +17,7 @@ deploy:
   stage: deploy
   image: ruby:latest
   only:
-    - main
+    - production
   script:
     - apt-get update -qy
     - apt-get install -y ruby-dev
