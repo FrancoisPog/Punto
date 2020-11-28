@@ -3,7 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <title>Punto chat</title>
-    <link rel="stylesheet" href="./chat.css" />
+    <link rel="stylesheet" href="./style/reset.css" />
+    <link rel="stylesheet" href="./style/chat.css" />
     <script src="/socket.io/socket.io.js"></script>
     <script src="./utils.js"></script>
     <script src="./smiley.js"></script>
@@ -26,16 +27,38 @@
     <input type="checkbox" id="cbPunto" checked />
 
     <div id="chat">
-      <h2>
-        <label for="radio2">Chat des L3 - <span id="login"></span></label>
-      </h2>
-      <h3>Clients connectés</h3>
-      <aside></aside>
-      <main></main>
+      <div id="overlay-top"></div>
+      <div id="overlay-bottom"></div>
+      <main>
+        <p><span data-author="Fanny">Hey hey</span></p>
+        <p><span data-author="Simon">ça va bien ?</span></p>
+        <p class="moi"><span data-author="Vous">Super et vous ?</span></p>
+        <p><span data-author="Simon">ça va bien ?</span></p>
+        <p class=""><span data-author="Vous">Super et vous ?</span></p>
+        <p class="system"><span>Fanny a rejoint la discussion</span></p>
+        <p class="moi"><span data-author="Vous">Super et vous ?</span></p>
+        <p><span data-author="Simon">ça va bien ?</span></p>
+        <p class="">
+          <span data-author="Vous"
+            >Une fonction qui prend comme seul argument une expression
+            mathématique et dont le résultat est utilisé comme valeur de retour.
+            L'expression peut être n'importe quelle expression combinant les
+            différents opérateurs suivants, en respectant l'ordre de priorité
+            des opérateur</span
+          >
+        </p>
+        <p><span data-author="Simon">ça va bien ?</span></p>
+        <p class="moi"><span data-author="Vous">Super et vous ?</span></p>
+        <p><span data-author="Simon">ça va bien ?</span></p>
+        <p class=""><span data-author="Vous">Super et vous ?</span></p>
+        <p><span data-author="Simon">ça va bien ?</span></p>
+        <p class="moi"><span data-author="Vous">Super et vous ?</span></p>
+      </main>
       <footer>
-        <input type="text" id="monMessage" />
-        <input type="button" value="Envoyer" id="btnEnvoyer" />
-        <input type="button" value="Quitter" id="btnQuitter" />
+        <div id="textInput">
+          <input type="text" id="monMessage" />
+          <input type="button" id="btnEnvoyer" />
+        </div>
       </footer>
     </div>
 
@@ -56,7 +79,7 @@
         </div>
         <div class="player">
           <div class="card back">
-            <p>
+            <p class="punto-logo">
               <span>p</span><span>u</span><span>n</span><span>t</span
               ><span>o</span>
             </p>
@@ -64,7 +87,7 @@
         </div>
         <div class="player">
           <div class="card back">
-            <p>
+            <p class="punto-logo">
               <span>p</span><span>u</span><span>n</span><span>t</span
               ><span>o</span>
             </p>
@@ -72,10 +95,38 @@
         </div>
         <div class="player">
           <div class="card back">
-            <p>
+            <p class="punto-logo">
               <span>p</span><span>u</span><span>n</span><span>t</span
               ><span>o</span>
             </p>
+          </div>
+        </div>
+        <div id="top-left" class="punto-angle">
+          <h2 class="punto-logo">
+            <span>p</span><span>u</span><span>n</span><span>t</span
+            ><span>o</span>
+          </h2>
+        </div>
+        <div id="top-right" class="punto-angle">
+          <div id="newGame" class="button" title="Créer une nouvelle partie">
+            <span>Nouvelle Partie</span>
+          </div>
+          <div id="newGame" class="button" title="Quitter cette partie">
+            <span>Quitter</span>
+          </div>
+        </div>
+        <div id="bottom-right" class="punto-angle">
+          <div id="nextGame" class="button" title="Partie suivante">
+            <span>👉</span>
+          </div>
+        </div>
+        <div id="bottom-left" class="punto-angle">
+          <div
+            id="previousGame"
+            class="button disabled"
+            title="Partie précédente"
+          >
+            <span>👈</span>
           </div>
         </div>
         <div id="board">

@@ -10,18 +10,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // DOM Elements
   let content = document.getElementById("content");
-  let radLogScreen = document.getElementById("radio1");
+
   let pseudoInput = document.getElementById("pseudo");
-  let radContentScreen = document.getElementById("radio2");
-  let asideClients = document.querySelector("#content aside");
+
+  let asideClients = document.querySelector("#chat aside");
   let btnConnect = document.getElementById("btnConnecter");
   let btnLogout = document.getElementById("btnQuitter");
-  let chatMain = document.querySelector("#content main");
+  let chatMain = document.querySelector("#chat main");
   let messageInput = document.getElementById("monMessage");
   let btnSend = document.getElementById("btnEnvoyer");
 
   // Display login screen
-  radLogScreen.checked = true;
+  document.body.classList.remove("connected");
   pseudoInput.focus();
 
   // Commands history system
@@ -55,7 +55,7 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   // Chifoumi command shortcut
-  asideClients.ondblclick = chifoumiCommandShortcut;
+  //asideClients.ondblclick = chifoumiCommandShortcut;
 
   btnConnect.onclick = connect;
 
@@ -65,10 +65,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   };
 
-  btnLogout.onclick = () => {
-    sock.emit("logout");
-    radLogScreen.checked = true;
-  };
+  // btnLogout.onclick = () => {
+  //   sock.emit("logout");
+  //   document.body.classList.remove("connected");
+  // };
 
   // Active the auto-complete smiley system at every interaction with the message input, if the content isn't a command
   for (let event of ["input", "focus", "click", "keyup"]) {
@@ -121,7 +121,7 @@ document.addEventListener("DOMContentLoaded", function () {
   sock.on("bienvenue", function (clientsList) {
     chatMain.innerHTML = "";
     chatMain.appendChild(dom);
-    radContentScreen.checked = true;
+    document.body.classList.add("connected");
     document.getElementById("login").textContent = pseudo;
     updateList(clientsList);
     if (pseudo.trim().toLowerCase() === "fred") {
@@ -319,9 +319,17 @@ document.addEventListener("DOMContentLoaded", function () {
     let msg = elt(
       "p",
       { class: type },
-      `${hours}:${minutes}:${secondes} - ${from} : ${text}`
+      elt(
+        "span",
+        {
+          "data-author": from === pseudo ? "Vous" : from,
+          "data-hours": `${hours}:${minutes}:${secondes}`,
+        },
+        text
+      )
     );
     chatMain.appendChild(msg);
+    msg.scrollIntoView();
   }
 
   function buzz() {
@@ -342,17 +350,17 @@ document.addEventListener("DOMContentLoaded", function () {
   function updateList(list) {
     list = JSON.parse(list);
 
-    asideClients.innerHTML = "";
+    //asideClients.innerHTML = "";
     Object.keys(list).forEach((client) => {
-      asideClients.appendChild(
-        elt(
-          "p",
-          {
-            "data-score": list[client],
-          },
-          client
-        )
-      );
+      // asideClients.appendChild(
+      //   elt(
+      //     "p",
+      //     {
+      //       "data-score": list[client],
+      //     },
+      //     client
+      //   )
+      // );
     });
   }
 });

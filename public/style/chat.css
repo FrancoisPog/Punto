@@ -8,148 +8,62 @@ html {
   --punto-blue: #20a5ce;
   --punto-green: #77b629;
   --punto-orange: #f6b003;
-}
-
-/* http://meyerweb.com/eric/tools/css/reset/ 
-   v2.0 | 20110126
-   License: none (public domain)
-*/
-
-html,
-body,
-div,
-span,
-applet,
-object,
-iframe,
-h1,
-h2,
-h3,
-h4,
-h5,
-h6,
-p,
-blockquote,
-pre,
-a,
-abbr,
-acronym,
-address,
-big,
-cite,
-code,
-del,
-dfn,
-em,
-img,
-ins,
-kbd,
-q,
-s,
-samp,
-small,
-strike,
-strong,
-sub,
-sup,
-tt,
-var,
-b,
-u,
-i,
-center,
-dl,
-dt,
-dd,
-ol,
-ul,
-li,
-fieldset,
-form,
-label,
-legend,
-table,
-caption,
-tbody,
-tfoot,
-thead,
-tr,
-th,
-td,
-article,
-aside,
-canvas,
-details,
-embed,
-figure,
-figcaption,
-footer,
-header,
-hgroup,
-menu,
-nav,
-output,
-ruby,
-section,
-summary,
-time,
-mark,
-audio,
-video {
-  margin: 0;
-  padding: 0;
-  border: 0;
-  font-size: 100%;
-  font: inherit;
-  vertical-align: baseline;
-}
-/* HTML5 display-role reset for older browsers */
-article,
-aside,
-details,
-figcaption,
-figure,
-footer,
-header,
-hgroup,
-menu,
-nav,
-section {
-  display: block;
-}
-body {
-  line-height: 1;
-}
-ol,
-ul {
-  list-style: none;
-}
-blockquote,
-q {
-  quotes: none;
-}
-blockquote:before,
-blockquote:after,
-q:before,
-q:after {
-  content: "";
-  content: none;
-}
-table {
-  border-collapse: collapse;
-  border-spacing: 0;
-}
-
-* {
-  box-sizing: border-box;
-}
-
-/*************************************************************************
- ***                    Début de la feuille de style                   ***
- *************************************************************************/
-
-html {
+  --chat-basic: #c1c9f4;
+  --chat-mine: #798ef9;
+  --background: rgb(229, 229, 229);
   font-size: 10px;
+}
+
+@media screen and (max-width: 1600px) {
+  html {
+    font-size: 8px;
+  }
+}
+
+@media screen and (max-width: 1400px) {
+  html {
+    font-size: 7px;
+  }
+}
+
+@media screen and (max-width: 1200px) {
+  html {
+    font-size: 6px;
+  }
+}
+
+/* Button */
+.button {
+  user-select: none;
+  cursor: pointer;
+  height: max-content;
+  width: max-content;
+  position: relative;
+  font-family: "punto";
+  color: #000;
+  padding-bottom: 0.3rem;
+  border-radius: 5px;
+  transition: all 0.1s;
+  background-color: grey;
+  margin: 1rem;
+}
+
+.button span {
+  background: var(--background);
+  display: block;
+  padding: 0.6rem 1.5rem;
+  border-radius: 5px;
+  font-size: 1.5rem;
+}
+
+.button:active:not(.disabled) {
+  top: 4px;
+  padding-bottom: 0.1rem;
+  margin-bottom: 1.2rem !important;
+}
+
+.button.disabled {
+  filter: grayscale(5);
 }
 
 body {
@@ -178,6 +92,7 @@ body {
   align-items: center;
   height: 100vh;
   width: 100vw;
+  font-size: 1.6rem;
 }
 
 #chat,
@@ -194,60 +109,128 @@ body.connected #login {
   display: none;
 }
 
+.dev #chat {
+  border: green 1px solid;
+}
+
 #chat {
   position: relative;
-  height: 500px;
-  width: 700px;
-  background-color: beige;
-  padding: 10px;
+  width: 90rem;
+  height: 90rem;
+  user-select: none;
 }
-#chat h2,
-#chat h3 {
-  position: absolute;
-  background-color: inherit;
-  height: 22px;
-  padding: 5px;
-  line-height: 16px;
-  font-size: 16px;
-  font-weight: bold;
-  border-radius: 5px 5px 0 0;
-  border-top: inherit;
-  border-left: inherit;
-  border-right: inherit;
-}
-#chat h2 {
-  top: -22px;
-  left: -1px;
-}
-#chat h3 {
-  right: -11px;
-  top: -12px;
-  transform-origin: left center;
-  transform: translate(100%) rotate(90deg);
+
+.dev #chat main {
+  border: 1px solid blue;
 }
 #chat main {
   position: relative;
-  height: calc(100% - 30px);
-  width: calc(100% - 170px);
-  background-color: white;
-  overflow-y: scroll;
-  line-height: 1.2;
+  width: 70rem;
+  margin: auto;
+  height: 100%;
+  overflow-y: auto;
+  scrollbar-color: rgba(0, 0, 0, 0);
+  scrollbar-width: none;
 }
+#chat main::-webkit-scrollbar {
+  display: none;
+}
+
+#chat #overlay-top {
+  width: 70rem;
+  position: absolute;
+  padding: 0 5rem;
+  top: 0;
+  left: 0;
+  z-index: 10;
+  margin: 0 calc(calc(100% - 70rem) / 2);
+  height: 5rem;
+  background: linear-gradient(
+    to bottom,
+    rgb(229, 229, 229, 1) 0%,
+    rgba(229, 229, 229, 0) 100%
+  );
+}
+
+#chat #overlay-bottom {
+  width: 70rem;
+  position: absolute;
+  padding: 0 5rem;
+  bottom: 0;
+  left: 0;
+  z-index: 10;
+  margin: 0 calc(calc(100% - 70rem) / 2);
+  height: 10rem;
+  background: linear-gradient(
+    to bottom,
+    rgba(229, 229, 229, 0) 0%,
+    rgb(229, 229, 229, 0.8) 60%,
+    rgb(229, 229, 229, 1) 100%
+  );
+}
+
 #chat main p {
-  line-height: 1;
-  font-size: 16px;
-  margin: 3px;
+  width: 100%;
+  height: max-content;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-start;
+  margin: 3rem 0;
 }
-#chat main .mp {
-  color: darkblue;
+
+#chat main p:last-child {
+  margin-bottom: 15rem;
 }
-#chat main .moi {
-  color: green;
+
+#chat main p:not(.system) span {
+  position: relative;
+  background-color: var(--chat-basic);
+  padding: 1rem 1.7rem;
+  border-radius: 0 15px 15px 15px;
+  display: block;
+  width: max-content;
+  max-width: 60%;
+  font-size: 2rem;
+  box-shadow: darkgrey 0 0 10px 0px;
+  user-select: none;
+  margin: 1rem;
 }
-#chat main .system {
-  color: orange;
+
+#chat main p span[data-author]::before {
+  content: attr(data-author);
+  position: absolute;
+  left: 0;
+  top: -1.7rem;
+  font-size: 1.5rem;
 }
-#chat main .chifoumi {
+
+#chat main p.mp span {
+  background-color: var(--chat-mine);
+}
+
+/* My messages */
+#chat main p.moi {
+  justify-content: flex-end;
+}
+
+#chat main p.moi span {
+  background-color: var(--chat-mine);
+  border-radius: 10px 0 10px 10px;
+}
+
+#chat main p.moi span[data-author]::before {
+  left: unset;
+  right: 0;
+}
+
+/* System messages */
+#chat main p.system {
+  justify-content: center;
+  text-shadow: grey 0 2px 2px;
+}
+
+#chat main p.chifoumi {
   color: blueviolet;
 }
 #chat main img {
@@ -256,39 +239,56 @@ body.connected #login {
 }
 
 /** Pied de zone de chat */
+.dev #chat footer {
+  border: 1px solid red;
+}
 #chat footer {
   position: absolute;
-  bottom: 0;
-  padding: 2px 0 6px 0;
-  width: calc(100% - 20px);
-  background-color: inherit;
-}
-#chat footer input {
-  font-size: 15px;
-}
-#chat > footer input:first-child {
-  width: calc(100% - 180px);
-  font-size: 12px;
-}
-#chat > footer input:last-child {
-  float: right;
+  left: 50%;
+  bottom: 4rem;
+  transform: translateX(-50%);
+  width: 60rem;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  z-index: 20;
 }
 
-#chat aside {
-  width: 160px;
-  float: right;
-  margin: 0px;
-  padding: 5px;
-  height: calc(100% - 30px);
-  background-color: white;
-  line-height: 1.2;
-  font-size: 14px;
+#chat footer #textInput {
+  position: relative;
+  height: 4rem;
+  width: 90%;
+  margin: 1rem;
+  transition: all 200ms;
+  opacity: 0.7;
 }
-#chat aside p {
-  cursor: pointer;
-  margin: 0;
-  padding: 0;
+
+#chat footer #textInput:hover {
+  transform: scale(1.2);
+  opacity: 1;
 }
+
+#chat > footer input:first-child {
+  border: 0;
+  border-radius: 10rem;
+  box-shadow: gray 0 0 40px 1px;
+  width: 100%;
+  height: 100%;
+  padding: 0 1.1rem;
+}
+#chat > footer input:last-child {
+  position: absolute;
+  background-color: lightblue;
+  height: 2rem;
+  width: 2rem;
+  border-radius: 50%;
+  border: 0;
+  right: 0.8rem;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
 #chat aside p[data-score]:after {
   content: " [" attr(data-score) " pts]";
   float: right;
@@ -309,6 +309,60 @@ body.connected #login {
   width: 90rem;
   background-color: #c4c4c4;
   border-radius: 10px;
+}
+#punto .punto-angle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+}
+
+#punto #top-right {
+  /* border: green 1px solid; */
+  grid-row: 1/1;
+  grid-column: 3/3;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: flex-end;
+  position: relative;
+  padding: 1rem;
+}
+
+#punto #top-left {
+  grid-row: 1/1;
+  grid-column: 1/1;
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+#punto #top-left h2 {
+  font-size: 5rem;
+  margin: 2rem 0 0 2rem;
+  font-weight: 700;
+  background-color: black;
+  padding: 0 1.7rem;
+  padding-bottom: 1.2rem;
+  border-radius: 10px;
+}
+
+#punto #top-left h2 span {
+  display: inline-block;
+}
+
+#punto #bottom-right {
+  grid-row: 3/3;
+  grid-column: 3/3;
+}
+
+#punto #bottom-left {
+  grid-row: 3/3;
+  grid-column: 1/1;
+}
+
+#punto #bottom-left .button span,
+#punto #bottom-right .button span {
+  font-size: 2.5rem;
+  padding-bottom: 1rem;
 }
 
 #punto main {
@@ -388,10 +442,11 @@ body.connected #login {
 
 /* Cards */
 .card {
+  user-select: none;
   box-shadow: grey 0px 0px 20px 4px;
   height: 5.5rem;
   width: 5.5rem;
-  border: 1px solid black;
+  /* border: 1px solid black; */
   margin: 7px;
   border-radius: 10px;
   display: grid;
@@ -482,17 +537,21 @@ body.connected #login {
   display: none;
 }
 
-.card.back span:nth-child(1),
-.card.back span:nth-child(5) {
+.punto-logo {
+  font-family: "punto";
+}
+
+.punto-logo span:nth-child(1),
+.punto-logo span:nth-child(5) {
   color: var(--punto-red);
 }
-.card.back span:nth-child(2) {
+.punto-logo span:nth-child(2) {
   color: var(--punto-blue);
 }
-.card.back span:nth-child(3) {
+.punto-logo span:nth-child(3) {
   color: var(--punto-orange);
 }
-.card.back span:nth-child(4) {
+.punto-logo span:nth-child(4) {
   color: var(--punto-green);
 }
 
