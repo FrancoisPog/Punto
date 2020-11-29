@@ -46,6 +46,7 @@ html {
   transition: all 0.1s;
   background-color: grey;
   margin: 1rem;
+  margin-bottom: 1rem;
 }
 
 .button span {
@@ -57,9 +58,10 @@ html {
 }
 
 .button:active:not(.disabled) {
-  top: 4px;
+  top: 0.4rem;
   padding-bottom: 0.1rem;
   margin-bottom: 1.2rem !important;
+  /* margin-bottom: calc(1rem - 4px); */
 }
 
 .button.disabled {
@@ -95,15 +97,28 @@ body {
   font-size: 1.6rem;
 }
 
+aside#menu {
+  position: absolute;
+  z-index: 100;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  user-select: none;
+  /* border: 1px solid violet; */
+  font-size: 3rem;
+  padding: 1rem;
+  height: max-content;
+}
+
 #chat,
 #punto,
 body > input[type="checkbox"] {
   display: none;
 }
 
-body.connected input#cbChat:checked ~ #chat,
-body.connected input#cbPunto:checked ~ #punto {
-  display: block;
+body.connected input#cbChat:not(:checked) ~ #chat,
+body.connected input#cbPunto:not(:checked) ~ #punto {
+  display: none;
 }
 body.connected #login {
   display: none;
@@ -114,10 +129,38 @@ body.connected #login {
 }
 
 #chat {
+  display: block;
   position: relative;
   width: 90rem;
   height: 90rem;
   user-select: none;
+}
+
+#chat #users,
+#chat input[name="cbUsers"] {
+  display: none;
+}
+
+#chat input[name="cbUsers"]:checked + #users {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  background-color: var(--background);
+  border-radius: 5px;
+  box-shadow: grey 0 0 5px 5px;
+}
+
+#chat #users p {
+  padding: 1rem;
+  padding-left: 1.2rem;
+  /* border: 1px solid cyan; */
+  font-size: 2rem;
+}
+#chat #users p::before {
+  content: "👤";
 }
 
 .dev #chat main {
@@ -269,6 +312,10 @@ body.connected #login {
   opacity: 1;
 }
 
+#chat label {
+  font-size: 3rem;
+}
+
 #chat > footer input:first-child {
   border: 0;
   border-radius: 10rem;
@@ -309,6 +356,9 @@ body.connected #login {
   width: 90rem;
   background-color: #c4c4c4;
   border-radius: 10px;
+  display: grid;
+  grid-template-columns: 4fr 7fr 4fr;
+  grid-template-rows: 4fr 7fr 4fr;
 }
 #punto .punto-angle {
   display: flex;
@@ -336,6 +386,7 @@ body.connected #login {
 }
 
 #punto #top-left h2 {
+  user-select: none;
   font-size: 5rem;
   margin: 2rem 0 0 2rem;
   font-weight: 700;
@@ -365,21 +416,10 @@ body.connected #login {
   padding-bottom: 1rem;
 }
 
-#punto main {
-  width: 100%;
-  height: 100%;
-  display: grid;
-  grid-template-columns: 4fr 7fr 4fr;
-  grid-template-rows: 4fr 7fr 4fr;
-}
-
 #punto #board {
   width: 100%;
   height: 100%;
   position: relative;
-}
-
-#punto #board {
   grid-column-start: 2;
   grid-row-start: 2;
   grid-row-end: 2;
@@ -389,13 +429,51 @@ body.connected #login {
   grid-template-rows: repeat(6, 1fr);
 }
 
+#punto #board.hidden {
+  display: none;
+}
+
+#punto #board,
+#punto .player {
+  transition: all 500ms;
+}
+
+#punto:hover #board,
+#punto:hover .player {
+  filter: blur(30px) grayscale(50%);
+}
+
 #punto .player {
   /* border: blue 1px solid; */
   position: relative;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
+}
+
+#punto .player h2 {
+  user-select: none;
+  font-family: "punto";
+  font-weight: 500;
+  font-size: 2rem;
+  padding-left: 5px;
+}
+
+#punto .player.green h2 {
+  border-left: 5px solid var(--punto-green);
+}
+
+#punto .player.blue h2 {
+  border-left: 5px solid var(--punto-blue);
+}
+
+#punto .player.red h2 {
+  border-left: 5px solid var(--punto-red);
+}
+
+#punto .player.orange h2 {
+  border-left: 5px solid var(--punto-orange);
 }
 
 #punto .player:nth-child(1) {
