@@ -32,6 +32,10 @@ html {
   }
 }
 
+.hidden {
+  display: none;
+}
+
 /* Button */
 .button {
   user-select: none;
@@ -50,6 +54,7 @@ html {
 }
 
 .button span {
+  user-select: none;
   background: var(--background);
   display: block;
   padding: 0.6rem 1.5rem;
@@ -69,7 +74,7 @@ html {
 }
 
 body {
-  font-family: sans-serif;
+  font-family: Arial, Helvetica, sans-serif;
   background-color: #e5e5e5;
 }
 
@@ -108,6 +113,7 @@ aside#menu {
   font-size: 3rem;
   padding: 1rem;
   height: max-content;
+  display: flex;
 }
 
 #chat,
@@ -116,8 +122,11 @@ body > input[type="checkbox"] {
   display: none;
 }
 
-body.connected input#cbChat:not(:checked) ~ #chat,
-body.connected input#cbPunto:not(:checked) ~ #punto {
+body input#cbChat:not(:checked) ~ #chat,
+body input#cbPunto:not(:checked) ~ #punto,
+body:not(.connected) #chat,
+body:not(.connected) #punto,
+body:not(.connected) #menu {
   display: none;
 }
 body.connected #login {
@@ -172,7 +181,6 @@ body.connected #login {
   margin: auto;
   height: 100%;
   overflow-y: auto;
-  scrollbar-color: rgba(0, 0, 0, 0);
   scrollbar-width: none;
 }
 #chat main::-webkit-scrollbar {
@@ -238,6 +246,7 @@ body.connected #login {
   box-shadow: darkgrey 0 0 10px 0px;
   user-select: none;
   margin: 1rem;
+  word-break: break-all;
 }
 
 #chat main p span[data-author]::before {
@@ -352,22 +361,148 @@ body.connected #login {
 
 /* Punto */
 #punto {
+  position: relative;
   height: 80rem;
   width: 90rem;
   background-color: #c4c4c4;
   border-radius: 10px;
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+
+#punto #frame {
   display: grid;
   grid-template-columns: 4fr 7fr 4fr;
   grid-template-rows: 4fr 7fr 4fr;
 }
-#punto .punto-angle {
+
+#punto #frame .game {
+  display: none;
+  grid-row: 1/4;
+  grid-column: 1/4;
+  grid-template-columns: 4fr 7fr 4fr;
+  grid-template-rows: 4fr 7fr 4fr;
+  height: 100%;
+  width: 100%;
+}
+
+#punto #frame input:checked + .game {
+  display: grid;
+}
+
+#punto #frame .game > div {
+  display: none;
+}
+
+#punto #frame .game:not(.join) > div.join,
+#punto #frame .game:not(.launch) > div.launch,
+#punto #frame .game:not(.play) > div.play {
+  display: none;
+}
+
+#punto #frame .game.join > div.join,
+#punto #frame .game.launch > div.launch {
+  display: flex;
+  grid-row: 1/4;
+  grid-column: 1/4;
+}
+
+#punto #frame .game.play > div.play {
+  display: grid;
+  grid-row: 1/4;
+  grid-column: 1/4;
+}
+
+/* Footer */
+
+#punto footer {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 3rem;
+  width: 100%;
   display: flex;
   flex-direction: row;
+}
+
+#punto footer label {
+  flex: 1;
+  text-align: center;
+}
+
+#punto input#radio_home:not(:checked) + #home,
+#punto input#radio_home:checked ~ #frame {
+  display: none;
+}
+
+#punto > div {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: center;
+
+  width: 100%;
+}
+
+#punto section {
+  font-size: 3.5rem;
+  text-align: center;
+  margin-bottom: 2rem;
+  width: 60%;
+  display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
 
-#punto #top-right {
+#punto section p {
+  font-size: 2rem;
+  width: 80%;
+  margin: 1rem auto;
+  text-align: center;
+}
+
+#punto #home .button span {
+  font-size: 3rem;
+}
+
+#punto aside {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  padding: 1rem;
+  width: 40%;
+}
+#punto aside h3 {
+  font-weight: bold;
+  font-size: 2rem;
+  margin-bottom: 1rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid black;
+}
+
+#punto aside iframe {
+  max-width: 100%;
+}
+
+#punto aside p {
+  font-size: 1.8rem;
+}
+
+/* <-- Angles --> */
+
+#punto #frame .punto-angle {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+#punto #frame #top-right {
   /* border: green 1px solid; */
   grid-row: 1/1;
   grid-column: 3/3;
@@ -378,14 +513,14 @@ body.connected #login {
   padding: 1rem;
 }
 
-#punto #top-left {
+#punto #frame #top-left {
   grid-row: 1/1;
   grid-column: 1/1;
   align-items: flex-start;
   justify-content: flex-start;
 }
 
-#punto #top-left h2 {
+#punto #frame #top-left h2 {
   user-select: none;
   font-size: 5rem;
   margin: 2rem 0 0 2rem;
@@ -396,27 +531,27 @@ body.connected #login {
   border-radius: 10px;
 }
 
-#punto #top-left h2 span {
+#punto #frame #top-left h2 span {
   display: inline-block;
 }
 
-#punto #bottom-right {
+#punto #frame #bottom-right {
   grid-row: 3/3;
   grid-column: 3/3;
 }
 
-#punto #bottom-left {
+#punto #frame #bottom-left {
   grid-row: 3/3;
   grid-column: 1/1;
 }
 
-#punto #bottom-left .button span,
-#punto #bottom-right .button span {
+#punto #frame #bottom-left .button span,
+#punto #frame #bottom-right .button span {
   font-size: 2.5rem;
   padding-bottom: 1rem;
 }
 
-#punto #board {
+#punto .board {
   width: 100%;
   height: 100%;
   position: relative;
@@ -429,16 +564,12 @@ body.connected #login {
   grid-template-rows: repeat(6, 1fr);
 }
 
-#punto #board.hidden {
-  display: none;
-}
-
-#punto #board,
+#punto .board,
 #punto .player {
   transition: all 500ms;
 }
 
-#punto:hover #board,
+#punto:hover .board,
 #punto:hover .player {
   filter: blur(30px) grayscale(50%);
 }
