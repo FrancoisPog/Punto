@@ -220,7 +220,7 @@ body.connected #login {
   );
 }
 
-#chat main p {
+#chat main > p {
   width: 100%;
   height: max-content;
   display: flex;
@@ -230,7 +230,7 @@ body.connected #login {
   margin: 3rem 0;
 }
 
-#chat main p:last-child {
+#chat main > p:last-child {
   margin-bottom: 15rem;
 }
 
@@ -316,8 +316,12 @@ body.connected #login {
   opacity: 0.7;
 }
 
-#chat footer #textInput:hover {
+#chat footer #textInput.focus {
   transform: scale(1.2);
+  opacity: 1;
+}
+
+#chat footer #textInput:hover {
   opacity: 1;
 }
 
@@ -325,7 +329,7 @@ body.connected #login {
   font-size: 3rem;
 }
 
-#chat > footer input:first-child {
+#chat > footer input:first-of-type {
   border: 0;
   border-radius: 10rem;
   box-shadow: gray 0 0 40px 1px;
@@ -333,7 +337,7 @@ body.connected #login {
   height: 100%;
   padding: 0 1.1rem;
 }
-#chat > footer input:last-child {
+#chat > footer input:last-of-type {
   position: absolute;
   background-color: lightblue;
   height: 2rem;
@@ -445,7 +449,7 @@ body.connected #login {
   justify-content: center;
 }
 
-#punto section:only-child {
+#punto section:last-child {
   width: 100%;
 }
 
@@ -685,7 +689,16 @@ body.connected #login {
 }
 
 .card.none {
+  background-color: inherit;
+  box-shadow: none;
+}
+
+.card.none .dot {
   visibility: hidden;
+}
+
+.card.none:hover {
+  background-color: #a0a0a0;
 }
 
 .card .dot {
@@ -746,6 +759,10 @@ body.connected #login {
   flex-direction: row;
   justify-content: center;
   align-items: center;
+}
+
+.card:not(.back) p {
+  display: none;
 }
 
 .card.back p {
@@ -859,22 +876,67 @@ body.connected #login {
   display: none;
   position: absolute;
   left: 0;
-  bottom: 0;
-  background: white;
-  border: 1px solid grey;
+  bottom: 5rem;
+  /* background: white; */
+  /* border: 1px solid grey; */
   width: 100%;
-  box-shadow: lightgray 0 0 6px 4px;
+  /* box-shadow: lightgray 0 0 6px 4px; */
   padding: 0;
 }
 
 #autocomplete p {
   padding: 15px;
+  background: rgba(245, 245, 245, 0.9);
+  border-radius: 5rem;
+  margin: 1rem;
+  box-shadow: lightgrey 0 0 1px 1px;
 }
 
 #autocomplete p.selected {
   background: #a0a0a0;
 }
 
-#autocomplete p + p {
-  border-top: black solid 1px;
+#popup-cb:not(:checked) + div {
+  display: none;
+}
+
+.popup > div {
+  height: 100%;
+  width: 100%;
+  position: absolute;
+  z-index: 100;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  border-radius: 10px;
+  top: 0;
+  left: 0;
+}
+
+.popup > div > div {
+  background-color: white;
+  padding: 3rem;
+  border-radius: 5px;
+}
+
+.popup > div > div > h4 {
+  font-size: 2.5rem;
+  font-weight: bold;
+  width: 100%;
+  text-align: center;
+}
+
+.popup > div > div > p {
+  margin: 1rem 0;
+  font-size: 2rem;
+}
+
+.popup > div > div > label {
+  display: inline-block;
+  width: 100%;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
 }

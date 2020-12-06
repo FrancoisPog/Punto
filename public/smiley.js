@@ -4042,7 +4042,7 @@ const emojis = [
 //    - Call 'autoCompleteSmileys' each time you want to activate the aucomplete system
 //    - You can use isOpen() to check if the selection area is opened
 
-let dom = elt("div", { id: "autocomplete" });
+let autoSmileyElt = elt("div", { id: "autocomplete" });
 let selected = -1;
 let textInput = null;
 
@@ -4121,16 +4121,16 @@ function autoCompleteSmileys(e, input) {
     }
 
     // Autocomplete with the selected smiley
-    dom.onclick = () => {
+    autoSmileyElt.onclick = () => {
       execute(caretPos - smileyShortcut.length, caretPos, input);
     };
 
     // Select the emoji under the pointer
-    dom.onmousemove = (e) => {
+    autoSmileyElt.onmousemove = (e) => {
       let emojiElt = e.target;
       let index = -1;
 
-      Array.from(dom.children).forEach((child, i) => {
+      Array.from(autoSmileyElt.children).forEach((child, i) => {
         child.classList.remove("selected");
         if (child === emojiElt) {
           index = i;
@@ -4148,11 +4148,11 @@ function autoCompleteSmileys(e, input) {
     // If the user click outside of the input and the selection zone, clear it
     document.body.addEventListener("click", closeOnBlur);
 
-    if (dom.children.length > 0 && selected >= 0) {
+    if (autoSmileyElt.children.length > 0 && selected >= 0) {
       getSelected().classList.add("selected");
     }
-    dom.classList.add("open");
-    if (dom.children.length === 0) {
+    autoSmileyElt.classList.add("open");
+    if (autoSmileyElt.children.length === 0) {
       clear();
     }
   }
@@ -4162,7 +4162,7 @@ function autoCompleteSmileys(e, input) {
  * Close the selection area if the user click outsie
  */
 function closeOnBlur(e) {
-  if (!dom.contains(e.target) && textInput !== e.target) {
+  if (!autoSmileyElt.contains(e.target) && textInput !== e.target) {
     clear(true);
   }
 }
@@ -4180,7 +4180,7 @@ function selectSmiley(e) {
       next();
     } else if (e.key === "Enter") {
       e.preventDefault();
-      dom.click();
+      autoSmileyElt.click();
     }
   }
 }
@@ -4190,10 +4190,10 @@ function selectSmiley(e) {
  * @return {null|Element}
  */
 function getSelected() {
-  if (selected === -1 || selected >= dom.children.length) {
+  if (selected === -1 || selected >= autoSmileyElt.children.length) {
     return null;
   }
-  return dom.children[selected];
+  return autoSmileyElt.children[selected];
 }
 
 /**
@@ -4202,10 +4202,10 @@ function getSelected() {
  */
 function clear(resetSelected) {
   console.assert(textInput !== null);
-  dom.innerText = "";
-  dom.onclick = null;
-  dom.onmousemove = null;
-  dom.classList.remove("open");
+  autoSmileyElt.innerText = "";
+  autoSmileyElt.onclick = null;
+  autoSmileyElt.onmousemove = null;
+  autoSmileyElt.classList.remove("open");
   document.body.removeEventListener("click", closeOnBlur);
   textInput.removeEventListener("keydown", selectSmiley);
   if (resetSelected) {
@@ -4219,16 +4219,16 @@ function clear(resetSelected) {
  * @param code The emoji short name
  */
 function add({ emoji, code }) {
-  dom.appendChild(elt("p", { "data-emoji": emoji }, emoji, code));
+  autoSmileyElt.appendChild(elt("p", { "data-emoji": emoji }, emoji, code));
 }
 
 /**
  * Select the next smiley in the selection area
  */
 function next() {
-  if (dom.children.length !== 0) {
-    selected = (selected + 1) % dom.children.length;
-    for (let child of dom.children) {
+  if (autoSmileyElt.children.length !== 0) {
+    selected = (selected + 1) % autoSmileyElt.children.length;
+    for (let child of autoSmileyElt.children) {
       child.classList.remove("selected");
     }
     getSelected().classList.add("selected");
@@ -4239,13 +4239,13 @@ function next() {
  * Select the previous smiley on the selection area
  */
 function previous() {
-  if (dom.children.length !== 0) {
+  if (autoSmileyElt.children.length !== 0) {
     if (selected === 0) {
-      selected = dom.children.length - 1;
+      selected = autoSmileyElt.children.length - 1;
     } else {
       selected--;
     }
-    for (let child of dom.children) {
+    for (let child of autoSmileyElt.children) {
       child.classList.remove("selected");
     }
     getSelected().classList.add("selected");
@@ -4257,7 +4257,7 @@ function previous() {
  * @return {boolean}
  */
 function isOpen() {
-  return dom.classList.contains("open");
+  return autoSmileyElt.classList.contains("open");
 }
 
 /**

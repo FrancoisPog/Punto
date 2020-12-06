@@ -20,6 +20,8 @@ const server = app.listen(port, function () {
 // Listen web sockets
 const io = socket_io.listen(server);
 
+const { log, assert, table, error } = console;
+
 // Serve the public directory
 app.use(express.static("public"));
 app.get("/", function (req, res) {
@@ -218,6 +220,14 @@ io.on("connection", function (socket) {
         removePlayerPunto(req);
         break;
       }
+      case "next": {
+        nextRoundPunto(req);
+        break;
+      }
+      case "winner": {
+        getWinner(req);
+        break;
+      }
       default: {
         console.error("Invalid punto action : " + req.action);
       }
@@ -338,8 +348,12 @@ io.on("connection", function (socket) {
       socket.emit("punto", { req, status: res, content });
       return;
     }
-    console.log(`${player} à bien rejoint la partie ${game} ! `);
-    socket.emit("punto", { req, status: 0 });
+
+    let players = JSON.parse(Punto.gameData(game)).players;
+    console.log(players);
+    for (let p in players) {
+      clients[p].emit("punto", { req, status: 0 });
+    }
   }
 
   function launchGamePunto(req) {
@@ -371,8 +385,9 @@ io.on("connection", function (socket) {
       socket.emit("punto", { req, status: res, content });
       return;
     }
-
-    socket.emit("punto", { req, status: 0 });
+    for (let p in JSON.parse(Punto.gameData(game)).players) {
+      clients[p].emit("punto", { req, status: 0 });
+    }
   }
 
   function playGamePunto(req) {
@@ -380,7 +395,7 @@ io.on("connection", function (socket) {
     let index = Number(req.index);
     let player = req.player;
 
-    if (!game || !player || !index) {
+    if (!game || !player || !Number.isInteger(index)) {
       console.log(`[playGamePunto] : arguments undefined`);
       socket.emit("punto", { req, status: -1, content: "Server error" });
       return;
@@ -388,7 +403,7 @@ io.on("connection", function (socket) {
 
     let res = Punto.play(game, player, index);
 
-    if (res !== 0) {
+    if (res < 0) {
       let content;
       switch (res) {
         case -1: {
@@ -403,8 +418,12 @@ io.on("connection", function (socket) {
           content = "Cette carte ne peut pas être posé ici";
           break;
         }
-        case 1: {
-          content = "La manche est terminée";
+        case -4: {
+          content = "Vous devez attendre votre tour pour jouer";
+          break;
+        }
+        case -5: {
+          content = "La partie n'est pas en cours de jeu";
           break;
         }
       }
@@ -413,7 +432,18 @@ io.on("connection", function (socket) {
       return;
     }
 
-    socket.emit("punto", { req, status: 0 });
+    let finished = typeof res === "object";
+
+    let data = JSON.parse(Punto.gameData(req.game));
+    let card = data.board[req.index];
+    for (let p in data.players) {
+      clients[p].emit("punto", {
+        req,
+        status: finished ? 1 : 0,
+        card,
+        next: finished ? null : data.currentPlayer,
+      });
+    }
   }
 
   function gameDataPunto(req) {
@@ -487,6 +517,73 @@ io.on("connection", function (socket) {
     }
 
     socket.emit("punto", { req, status: 0, content: res });
+  }
+
+  function nextRoundPunto(req) {
+    let game = Number(req.game);
+    if (!game) {
+      console.log(`[nextRoundPunto] : game id undefined`);
+      socket.emit("punto", { req, status: -1, content: "Server error" });
+      return;
+    }
+
+    let res = Punto.nextRound(game);
+    if (res !== 0) {
+      let content;
+      switch (res) {
+        case -1: {
+          content = "Cette partie n'existe pas";
+          break;
+        }
+        case -2: {
+          content = "Ce n'est pas le moment de passer au tour suivant";
+          break;
+        }
+        default: {
+          content = "server error";
+          break;
+        }
+      }
+    }
+
+    let data = JSON.parse(Punto.gameData(req.game));
+    for (let p in data.players) {
+      clients[p].emit("punto", { req, status: res });
+    }
+  }
+
+  function getWinner(req) {
+    let game = Number(req.game);
+    if (!game) {
+      console.log(`[getWinner] : game id undefined`);
+      socket.emit("punto", { req, status: -1, content: "Server error" });
+      return;
+    }
+
+    let players = JSON.parse(Punto.gameData(game)).players;
+
+    let res = Punto.gameResult(game);
+    if (typeof res === "number") {
+      let content;
+      switch (res) {
+        case -1: {
+          content = "Cette partie n'existe pas";
+          break;
+        }
+        case -2: {
+          content = "La partie n'est pas terminée";
+          break;
+        }
+        default: {
+          content = "server error";
+          break;
+        }
+      }
+    }
+
+    for (let p in players) {
+      clients[p].emit("punto", { req, status: 0, winner: res.winner });
+    }
   }
 });
 

@@ -76,7 +76,7 @@
 
     <aside id="menu">
       <label for="cbChat" title="Afficher/Masquer le chat">&#128172;</label>
-      <h2>François</h2>
+      <h2 id="userPseudo">François</h2>
       <label for="cbPunto" title="Afficher/Masquer le jeu">🎮</label>
     </aside>
 
@@ -112,6 +112,18 @@
       </div>
       <!-- Frame -->
       <div id="frame">
+        <div class="popup">
+          <input type="checkbox" id="popup-cb" class="hidden" />
+          <div>
+            <div>
+              <h4 id="popup-title"></h4>
+              <p id="popup-text"></p>
+              <label for="popup-cb">
+                <div class="button" id="popup-btn"><span></span></div>
+              </label>
+            </div>
+          </div>
+        </div>
         <!-- Angles -->
         <div id="top-left" class="punto-angle">
           <h2 class="punto-logo">

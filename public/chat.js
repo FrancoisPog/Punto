@@ -2,6 +2,18 @@
 
 const { log, assert, error, table } = console;
 
+const number = [
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+];
+
 document.addEventListener("DOMContentLoaded", function () {
   // Socket connection
   let sock = io.connect();
@@ -24,6 +36,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let btnPuntoCreate = document.getElementById("btnPuntoCreate");
   let puntoFrame = document.getElementById("frame");
   let puntoFooter = document.querySelector("#punto > footer");
+  let messageWrapper = document.getElementById("textInput");
 
   // Display login screen
   document.body.classList.remove("connected");
@@ -61,6 +74,14 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // Chifoumi command shortcut
   //asideClients.ondblclick = chifoumiCommandShortcut;
+
+  messageInput.onfocus = () => {
+    messageWrapper.classList.add("focus");
+  };
+
+  messageInput.onblur = () => {
+    messageWrapper.classList.remove("focus");
+  };
 
   btnConnect.onclick = connect;
 
@@ -133,10 +154,11 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   sock.on("bienvenue", function (clientsList) {
-    chatMain.innerHTML = "";
-    chatMain.appendChild(dom);
+    //chatMain.innerHTML = "";
+    messageWrapper.appendChild(autoSmileyElt);
     document.body.classList.add("connected");
-    document.getElementById("login").textContent = pseudo;
+    document.getElementById("radio_home").checked = true;
+    document.getElementById("userPseudo").textContent = pseudo;
     updateList(clientsList);
   });
 
@@ -188,13 +210,17 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("[punto] - Invalid data received from server ");
       return;
     }
+    let action = data.action ? data.action : data.req.action;
 
-    if (data.status !== 0) {
+    if (data.status < 0) {
       console.error("Non zero status !");
+      displayPopup(
+        `Attention !`,
+        `${data.content ? data.content : "Erreur server"}`,
+        "Compris !"
+      );
       return;
     }
-
-    let action = data.action ? data.action : data.req.action;
 
     switch (action) {
       case "create": {
@@ -213,9 +239,28 @@ document.addEventListener("DOMContentLoaded", function () {
         break;
       }
       case "data": {
-        if (JSON.parse(data.content).status === "pending") {
-          updatePlayersList(data.req.game, JSON.parse(data.content).players);
+        let gameData = JSON.parse(data.content);
+        let status = gameData.status;
+        if (status === "pending") {
+          updatePlayersList(data.req.game, gameData.players);
+        } else if (status === "running") {
+          // First turn ?
+          if (gameData.board.some((c) => c !== null)) {
+            updateGameData(data.req.game, gameData);
+          } else {
+            deleteGameTab(data.req.game);
+            createLaunchedGame(data.req.game, gameData);
+          }
         }
+
+        if (gameData.currentPlayer === pseudo) {
+          sock.emit("punto", {
+            action: "card",
+            game: data.req.game,
+            player: pseudo,
+          });
+        }
+
         break;
       }
       case "remove": {
@@ -227,12 +272,92 @@ document.addEventListener("DOMContentLoaded", function () {
         break;
       }
       case "join": {
-        //break;
+        if (data.req.player === pseudo) {
+          deleteGameTab(data.req.game);
+          createPuntoGame(data.req.game);
+        }
+        sock.emit("punto", { action: "data", game: data.req.game });
+        break;
       }
+      case "launch": {
+        sock.emit("punto", { action: "data", game: data.req.game });
+        break;
+      }
+      case "card": {
+        let card = JSON.parse(data.content);
+        updatePlayerCard(data.req.game, card);
+        break;
+      }
+      case "play": {
+        let card = document.querySelector(
+          `#punto .game.play[data-gameid="${
+            data.req.game
+          }"] > .board .card:nth-child(${data.req.index + 1})`
+        );
 
+        card.className = `card ${data.card.color} ${
+          number[data.card.value - 1]
+        }`;
+
+        if (data.req.player === pseudo) {
+          updatePlayerCard(data.req.game);
+        }
+
+        if (data.status === 1) {
+          displayPopup(
+            "Terminé !",
+            `${data.req.player} a gagné cette manche !`,
+            "Continuer !"
+          );
+          if (data.req.player === pseudo) {
+            sock.emit("punto", { action: "next", game: data.req.game });
+          }
+          break;
+        }
+
+        if (data.next === pseudo) {
+          sock.emit("punto", {
+            action: "card",
+            game: data.req.game,
+            player: pseudo,
+          });
+        }
+
+        break;
+      }
+      case "next": {
+        if (data.status === 1) {
+          sock.emit("punto", { action: "winner", game: data.req.game });
+          return;
+        }
+        sock.emit("punto", { action: "data", game: data.req.game });
+        break;
+      }
+      case "winner": {
+        displayPopup(
+          `${data.winner} gagne la partie !`,
+          `Après avoir gagné deux manches, ${data.winner} gagne et termine cette partie !`,
+          "Terminer !"
+        );
+        deleteGameTab(data.req.game);
+
+        break;
+      }
       default: {
         console.error(`The "${action}" action is not handled !`);
       }
+    }
+  }
+
+  function updatePlayerCard(id, card) {
+    let cardElt = document.querySelector(
+      `#punto .game.play[data-gameid="${id}"] > .player[data-pseudo="${pseudo}"] .card `
+    );
+    log(cardElt, card);
+    if (card) {
+      cardElt.className = `card ${card.color} ${number[card.value - 1]}`;
+    } else {
+      cardElt.className = `card back`;
     }
   }
 
@@ -249,6 +374,7 @@ document.addEventListener("DOMContentLoaded", function () {
       class: "hidden",
       name: "punto-frame",
       id: "radio-game-" + id,
+      checked: "true",
     });
 
     let label = elt("label", { for: "radio-game-" + id }, "P" + id);
@@ -256,6 +382,7 @@ document.addEventListener("DOMContentLoaded", function () {
     puntoFrame.appendChild(input);
     puntoFrame.appendChild(div);
     puntoFooter.appendChild(label);
+
     return div;
   }
 
@@ -265,13 +392,6 @@ document.addEventListener("DOMContentLoaded", function () {
    */
   function createPuntoGame(id, players) {
     let div = createGameTab(id, "launch");
-
-    let section = elt(
-      "section",
-      {},
-      elt("h2", {}, "Salle d'attente"),
-      createButton("Lancer la partie")
-    );
 
     let aside = elt("aside", {});
 
@@ -297,6 +417,22 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     };
 
+    let section = elt(
+      "section",
+      {},
+      elt("h2", {}, "Salle d'attente"),
+      createButton("Lancer la partie", {}, () => {
+        for (let p of aside.getElementsByClassName("pending")) {
+          sock.emit("punto", {
+            action: "remove",
+            player: p.textContent,
+            game: id,
+          });
+        }
+        sock.emit("punto", { action: "launch", game: id });
+      })
+    );
+
     div.appendChild(section);
     div.appendChild(aside);
 
@@ -306,6 +442,70 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     updatePlayersList(id, players);
+  }
+
+  function createCard(type, color) {
+    return elt(
+      "div",
+      {
+        class: `card ${type} ${/^(none|back)$/.test(type) ? "" : color}`,
+      },
+
+      ...Array(9)
+        .fill(null)
+        .map(() => elt("div", { class: "dot" })),
+      elt(
+        "p",
+        { class: "punto-logo" },
+        ..."punto".split("").map((l) => elt("span", {}, l))
+      )
+    );
+  }
+
+  function createLaunchedGame(id, gameData) {
+    let div = createGameTab(id, "play");
+
+    for (let player in gameData.players) {
+      let playerElt = elt(
+        "div",
+        {
+          class: "player " + gameData.players[player].colors.join(" "),
+          "data-pseudo": player,
+        },
+        elt("h2", {}, player),
+        createCard("back")
+      );
+      if (player == pseudo) {
+        div.insertAdjacentElement("afterbegin", playerElt);
+      } else {
+        div.appendChild(playerElt);
+      }
+    }
+
+    let board = elt(
+      "div",
+      { class: "board" },
+      ...gameData.board.map((c) => {
+        if (c === null) {
+          return createCard("none");
+        }
+        return createCard(c.value, c.color);
+      })
+    );
+    board.onclick = (e) => {
+      let card = e.target;
+      if (card.classList.contains("dot")) {
+        card = card.parentElement;
+      }
+      if (!card.classList.contains("card")) {
+        return;
+      }
+
+      let index = Array.from(board.children).indexOf(card);
+
+      sock.emit("punto", { action: "play", game: id, index, player: pseudo });
+    };
+    div.appendChild(board);
   }
 
   function deleteGameTab(id) {
@@ -401,8 +601,19 @@ document.addEventListener("DOMContentLoaded", function () {
    * @param {string} text The button content
    * @param {string} attr The button attributs
    */
-  function createButton(text, attr = {}) {
-    return elt("div", { class: "button", ...attr }, elt("span", {}, text));
+  function createButton(text, attr = {}, ...callbacks) {
+    let btn = elt("div", { class: "button", ...attr }, elt("span", {}, text));
+    callbacks.forEach((c) => {
+      btn.addEventListener("click", c);
+    });
+    return btn;
+  }
+
+  function displayPopup(title, text, button) {
+    document.getElementById("popup-title").textContent = title;
+    document.getElementById("popup-text").textContent = text;
+    document.getElementById("popup-btn").firstChild.textContent = button;
+    document.getElementById("popup-cb").checked = true;
   }
 
   function chifoumiCommandShortcut(e) {
@@ -426,7 +637,6 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
     sock.emit("login", pseudo);
-    connected = true;
   }
 
   /**

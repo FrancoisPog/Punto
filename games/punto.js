@@ -281,13 +281,13 @@ export function nextRound(gameId) {
 
   //Cards
 
-  console.log("> Suppression des cartes correspondant à la couleur du joueur");
+  //console.log("> Suppression des cartes correspondant à la couleur du joueur");
   for (let p of getPlayers(gameId)) {
     game[p].cards = game[p].cards.filter(
       (c) => !game[p].colors.includes(c.color)
     );
-    console.log("Cartes restantes pour " + p);
-    console.log(game[p].cards);
+    // console.log("Cartes restantes pour " + p);
+    // console.log(game[p].cards);
   }
 
   if (getPlayers(gameId).length === 3) {
@@ -338,11 +338,11 @@ export function nextRound(gameId) {
     }
   }
 
-  console.log("> Attribution des cartes de la couleur des joueurs");
+  // console.log("> Attribution des cartes de la couleur des joueurs");
   let removedCards = game._removedCards.slice();
   for (const p of getPlayers(gameId)) {
     for (let color of game[p].colors) {
-      console.log(`Cartes ${color} pour ${p}`);
+      //console.log(`Cartes ${color} pour ${p}`);
       for (let i = 0; i < 18; ++i) {
         let card = { color, value: 1 + (i % 9) };
         let index = removedCards.findIndex(
@@ -353,10 +353,11 @@ export function nextRound(gameId) {
           removedCards.splice(index, 1);
           continue;
         }
-        process.stdout.write(`[${card.color[0]}${card.value}]`);
+        //process.stdout.write(`[${card.color[0]}${card.value}]`);
         game[p].cards.push(card);
       }
-      console.log("");
+      //console.log("");
+      shuffle(game[p].cards);
     }
   }
 
@@ -380,7 +381,7 @@ export function gameData(gameId) {
 
   let data = {};
   data.status = game._status;
-  if (game._status === "running") {
+  if (game._status !== "pending") {
     data.board = game._board;
     data.nthRound = game._nthRound;
     data.removedCards = game._removedCards;
@@ -410,7 +411,7 @@ export function gameData(gameId) {
  * @param {*} gameId
  * @param {*} player
  * @param {*} index
- * @returns {number} `-1` if the game doesn't exist, `-2` if the player doesn't participate, `-3` if the card can be put here, `1` on success and if the game is finished
+ * @returns {number} `-1` if the game doesn't exist, `-2` if the player doesn't participate, `-3` if the card can be put here, `-4` if the player isn't the current player, `1` on success and if the game is finished
  */
 export function play(gameId, player, index) {
   gameId = Number(gameId);
@@ -423,6 +424,10 @@ export function play(gameId, player, index) {
   if (!game[player]) {
     // Does player participate to game ?
     return -2;
+  }
+
+  if (game._status !== "running") {
+    return -5;
   }
 
   if (game._current !== game[player].order) {
@@ -472,8 +477,8 @@ export function play(gameId, player, index) {
         winner = p;
       }
     });
-
-    console.log(`> Défaussage de la carte ${results.max} ${results.color}`);
+    log(`${winner} win this round.`);
+    log(`Défaussage de la carte ${results.max} ${results.color}`);
     game._removedCards.push({ value: results.max, color: results.color });
     game._status = "break";
 
@@ -516,7 +521,7 @@ export function gameResult(gameId) {
  * Return the current card (JSON) of a player
  * @param {} gameId
  * @param {*} player
- * @returns {number} `-1` if the game doesn't exist, `-2`
+ * @returns {number} `-1` if the game doesn't exist, `-2` if the player doesn't participate, `-3` if the player isn't the current player
  */
 export function getCard(gameId, player) {
   gameId = Number(gameId);

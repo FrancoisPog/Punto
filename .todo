@@ -1,12 +1,17 @@
-- Supprimer un joueur d'une partie
-- Joindre une partie
-- Lancer une partie
-- Jouer un tour
-- Joueur une partie entière
-- Message privé à pluieurs personne
-- Corriger style de l'autocompletion
+-> Diversifiers
 - Adapter le style pour modbile/tablette
 - mode sombre
-- jeu qui parle
+- jeu qui parle (robot ?)
+- Animations
+
+-> Punto
 - coder IA
 - supprimer le joueur des la manche suivante
+
+-> Autre
+- Message privé à pluieurs personne
+- Bien afficher les deux couleurs lors d'un jeu à 2 joueurs
+- Afficher message chifoumi chat
+- Bouton quitter
+- Aficher l'heure des messages
+- fix bug connection 
