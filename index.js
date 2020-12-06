@@ -31,11 +31,6 @@ io.set("origins", "*:*");
 
 const clients = {}; // { id -> socket, ... }
 
-function remove(id) {
-  delete clients[id];
-  supprimer(id);
-}
-
 io.on("connection", function (socket) {
   console.log("Un client s'est connecté");
   let currentID = null;
@@ -56,7 +51,7 @@ io.on("connection", function (socket) {
     console.log("Nouvel utilisateur : " + currentID);
     // envoi d'un message de bienvenue à ce client
 
-    socket.emit("bienvenue", scoresJSON());
+    socket.emit("bienvenue", formatList());
     // envoi aux autres clients
     socket.broadcast.emit("message", {
       from: null,
@@ -65,7 +60,7 @@ io.on("connection", function (socket) {
       date: Date.now(),
     });
     // envoi de la nouvelle liste à tous les clients connectés
-    socket.broadcast.emit("liste", scoresJSON());
+    socket.broadcast.emit("liste", formatList());
   });
 
   socket.on("message", function (msg) {
@@ -109,29 +104,14 @@ io.on("connection", function (socket) {
     }
   });
 
-  socket.on("logout", function () {
-    // si client était identifié (devrait toujours être le cas)
-    if (currentID !== undefined) {
-      console.log("Sortie de l'utilisateur " + currentID);
-      // envoi de l'information de déconnexion
-      socket.broadcast.emit("message", {
-        from: null,
-        to: null,
-        text: currentID + " a quitté la discussion",
-        date: Date.now(),
-      });
-      // suppression de l'entrée
-      remove(currentID);
-      // désinscription du client
-      currentID = null;
-      // envoi de la nouvelle liste pour mise à jour
-      socket.broadcast.emit("liste", scoresJSON());
-    }
-  });
+  socket.on("logout", leave);
 
-  socket.on("disconnect", function () {
+  socket.on("disconnect", leave);
+
+  function leave() {
+    console.log(currentID + " a quitté");
     // si client était identifié
-    if (currentID !== undefined) {
+    if (currentID) {
       // envoi de l'information de déconnexion
       socket.broadcast.emit("message", {
         from: null,
@@ -141,12 +121,13 @@ io.on("connection", function (socket) {
       });
       // suppression de l'entrée
       remove(currentID);
+
       // désinscription du client
       currentID = null;
       // envoi de la nouvelle liste pour mise à jour
-      socket.broadcast.emit("liste", scoresJSON());
+      socket.broadcast.emit("liste", formatList());
     }
-  });
+  }
 
   socket.on("chifoumi", function ({ to, element }) {
     let res = defier(currentID, to, element);
@@ -194,7 +175,7 @@ io.on("connection", function (socket) {
             text: res.resultat.message + " - c'est perdu :frowning_face:",
             date: Date.now(),
           });
-          io.sockets.emit("liste", scoresJSON());
+          io.sockets.emit("liste", formatList());
         }
         break;
     }
@@ -233,8 +214,35 @@ io.on("connection", function (socket) {
         getCardPunto(req);
         break;
       }
+      case "remove": {
+        removePlayerPunto(req);
+        break;
+      }
+      default: {
+        console.error("Invalid punto action : " + req.action);
+      }
     }
   });
+
+  function removePlayerPunto(req) {
+    let game = Number(req.game);
+    let player = req.player;
+    if (!game || !player) {
+      console.log(`Impossible de supprimer '${player}' de la partie ${game} !`);
+      socket.emit("punto", { req, status: -1, content: "Undefined arguments" });
+      return;
+    }
+
+    Punto.removePlayer(player, game);
+
+    let gameData = JSON.parse(Punto.gameData(game));
+
+    //socket.emit("punto", { req, status: 0 });
+    for (let p in gameData.players) {
+      log(p);
+      clients[p].emit("punto", { req, game, gameData });
+    }
+  }
 
   function createGamePunto(req) {
     let id = Punto.createGame(currentID);
@@ -279,8 +287,17 @@ io.on("connection", function (socket) {
       socket.emit("punto", { req, status: res, content });
       return;
     }
+    console.log(`${player} a bien été invité dans la partie ${game}`);
 
-    socket.emit("punto", { req, status: 0 });
+    let gameData = JSON.parse(Punto.gameData(game));
+
+    for (let p in gameData.players) {
+      if (gameData.players[p].status === "ready") {
+        clients[p].emit("punto", { req, status: 0, gameData });
+      }
+    }
+
+    clients[player].emit("punto", { req, status: 0 });
   }
 
   function joinGamePunto(req) {
@@ -318,7 +335,7 @@ io.on("connection", function (socket) {
       socket.emit("punto", { req, status: res, content });
       return;
     }
-
+    console.log(`${player} à bien rejoint la partie ${game} ! `);
     socket.emit("punto", { req, status: 0 });
   }
 
@@ -469,3 +486,15 @@ io.on("connection", function (socket) {
     socket.emit("punto", { req, status: 0, content: res });
   }
 });
+
+// ***** FUNCTIONS *****
+
+function remove(id) {
+  delete clients[id];
+  supprimer(id);
+  Punto.removePlayer(id);
+}
+
+function formatList() {
+  return JSON.stringify(Object.keys(clients));
+}

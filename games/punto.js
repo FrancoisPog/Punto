@@ -17,14 +17,15 @@ let static_id = 1;
  *
  *  games = {
  *      34 : {
- *          _status : 'running'
+ *          _status : 'running' (or 'pending', 'break', 'finished)
  *          _current : fred,
  *          _board : [null, null, {color : red, value : 8}, null, ...],
  *          _nthRound : 1,
+ *          _removedCards : [{color : blue, value : 5}]
  *          goku : {
  *                  status : 'ready',
  *                  cards : [{color : blue, value : 6}...],
- *                  victories : [1],
+ *                  victories : [1], // number of round won
  *                  colors : ['blue']
  *          }
  *          vegeta : {
@@ -119,7 +120,7 @@ export function joinGame(gameId, player) {
 }
 
 /**
- * Remove a player from a all games
+ * Remove a player from a game, all games if no game specified
  * @param {string} player The player to remove
  * @param {number} gameId The id of the game to quit
  */
@@ -368,13 +369,16 @@ export function gameData(gameId) {
   }
 
   let data = {};
-  data.board = game._board;
-  data.nthRound = game._nthRound;
-  data.removedCards = game._removedCards;
+  if (game._status === "running") {
+    data.board = game._board;
+    data.nthRound = game._nthRound;
+    data.removedCards = game._removedCards;
+  }
+
   let list = Object.create(null);
   getPlayers(gameId).forEach((p) => {
     let player = game[p];
-    if (player.order == game._current) {
+    if (player.order === game._current) {
       data.currentPlayer = p;
     }
 
@@ -525,6 +529,20 @@ export function getCard(gameId, player) {
   }
 
   return JSON.stringify(cards[cards.length - 1]);
+}
+
+/**
+ * Get the list of games id, all or for a specified player
+ * @param {string} player
+ */
+export function getGames(player) {
+  let list = Object.keys(games);
+  if (!player) {
+    return list;
+  }
+  return list.filter((g) => {
+    Object.keys(games[g]).includes(player);
+  });
 }
 
 // ***** TEST FUNCTIONS *****

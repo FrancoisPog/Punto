@@ -377,8 +377,11 @@ body.connected #login {
   grid-template-rows: 4fr 7fr 4fr;
 }
 
-#punto #frame .game {
+#punto #frame input:not(:checked) + .game {
   display: none;
+}
+
+#punto #frame .game {
   grid-row: 1/4;
   grid-column: 1/4;
   grid-template-columns: 4fr 7fr 4fr;
@@ -387,28 +390,14 @@ body.connected #login {
   width: 100%;
 }
 
-#punto #frame input:checked + .game {
-  display: grid;
-}
-
-#punto #frame .game > div {
-  display: none;
-}
-
-#punto #frame .game:not(.join) > div.join,
-#punto #frame .game:not(.launch) > div.launch,
-#punto #frame .game:not(.play) > div.play {
-  display: none;
-}
-
-#punto #frame .game.join > div.join,
-#punto #frame .game.launch > div.launch {
+#punto #frame .game.join,
+#punto #frame .game.launch {
   display: flex;
   grid-row: 1/4;
   grid-column: 1/4;
 }
 
-#punto #frame .game.play > div.play {
+#punto #frame .game.play {
   display: grid;
   grid-row: 1/4;
   grid-column: 1/4;
@@ -454,6 +443,10 @@ body.connected #login {
   flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+#punto section:only-child {
+  width: 100%;
 }
 
 #punto section p {
@@ -571,7 +564,7 @@ body.connected #login {
 
 #punto:hover .board,
 #punto:hover .player {
-  filter: blur(30px) grayscale(50%);
+  /* filter: blur(30px) grayscale(50%); */
 }
 
 #punto .player {
@@ -647,6 +640,33 @@ body.connected #login {
 .player .card {
   height: 6.5rem;
   width: 6.5rem;
+}
+
+#punto .game.launch aside {
+  justify-content: center;
+}
+
+#punto .game.launch aside h3 {
+  width: 80%;
+  text-align: center;
+}
+
+#punto .game.launch aside h4 {
+  font-weight: bold;
+  font-size: 1.9rem;
+}
+
+#punto .game.launch aside p {
+  position: relative;
+  cursor: pointer;
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+}
+
+#punto .game.launch aside p:hover::before {
+  content: "+";
+  position: absolute;
+  left: 0;
 }
 
 /* Cards */

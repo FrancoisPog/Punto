@@ -1,24 +1,29 @@
 "use strict";
 
-var esock;
+const { log, assert, error, table } = console;
 
 document.addEventListener("DOMContentLoaded", function () {
   // Socket connection
   let sock = io.connect();
-  esock = sock;
+
   let pseudo = null;
+  let connected = false;
+  let list = [];
 
   // DOM Elements
   let content = document.getElementById("content");
 
   let pseudoInput = document.getElementById("pseudo");
 
-  let asideClients = document.querySelector("#chat aside");
+  let asideClients = document.querySelector("#users");
   let btnConnect = document.getElementById("btnConnecter");
   let btnLogout = document.getElementById("btnQuitter");
   let chatMain = document.querySelector("#chat main");
   let messageInput = document.getElementById("monMessage");
   let btnSend = document.getElementById("btnEnvoyer");
+  let btnPuntoCreate = document.getElementById("btnPuntoCreate");
+  let puntoFrame = document.getElementById("frame");
+  let puntoFooter = document.querySelector("#punto > footer");
 
   // Display login screen
   document.body.classList.remove("connected");
@@ -111,9 +116,18 @@ document.addEventListener("DOMContentLoaded", function () {
 
   btnSend.onclick = sendMessage;
 
+  // *****    PUNTO       *****
+
+  btnPuntoCreate.onclick = () => {
+    sock.emit("punto", { action: "create" });
+  };
+
   // *****    SOCKECT     *****
 
   sock.on("erreur-connexion", function (msg) {
+    if (connected) {
+      return;
+    }
     alert(msg);
     pseudo = null;
   });
@@ -124,9 +138,6 @@ document.addEventListener("DOMContentLoaded", function () {
     document.body.classList.add("connected");
     document.getElementById("login").textContent = pseudo;
     updateList(clientsList);
-    if (pseudo.trim().toLowerCase() === "fred") {
-      guacamole();
-    }
   });
 
   sock.on("liste", function (clientsList) {
@@ -164,11 +175,202 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   });
 
-  sock.on("punto", function (res) {
-    console.log(res);
-  });
+  sock.on("punto", handlePuntoEvent);
 
   // *****    FUNCTIONS     *****
+
+  /**
+   * Handle punto events
+   * @param {object} data
+   */
+  function handlePuntoEvent(data) {
+    console.dir(data);
+
+    if (!data || ((!data.req || !data.req.action) && !data.action)) {
+      console.error("[punto] - Invalid data received from server ");
+      return;
+    }
+
+    if (data.status !== 0) {
+      console.error("Non zero status !");
+      return;
+    }
+
+    let action = data.action ? data.action : data.req.action;
+
+    switch (action) {
+      case "create": {
+        console.assert(data.game);
+        createPuntoGame(data.game);
+        break;
+      }
+      case "invite": {
+        console.assert(data.req.from && data.req.game && data.req.player);
+        if (data.req.player !== pseudo) {
+          // If the client isn't the one invited -> update the players list
+          updatePlayersList(data.req.game, data.gameData.players);
+          return;
+        }
+        createPuntoInvitation(data.req.from, data.req.game);
+        break;
+      }
+      case "data": {
+        updateGameData(data.gameData);
+        updatePlayersList(data.req.game, JSON.parse(data.content).players);
+        break;
+      }
+      default: {
+        console.error(`The "${action}" action is not handled !`);
+      }
+    }
+  }
+
+  /**
+   * Create a new punto game tab
+   * @param {number} id The game Id
+   * @param {string} type The status of the game : 'launch','invite' or 'play'
+   */
+  function createGameTab(id, type) {
+    let div = elt("div", { class: `${type} game`, "data-gameId": id });
+
+    let input = elt("input", {
+      type: "radio",
+      class: "hidden",
+      name: "punto-frame",
+      id: "radio-game-" + id,
+    });
+
+    let label = elt("label", { for: "radio-game-" + id }, "P" + id);
+
+    puntoFrame.appendChild(input);
+    puntoFrame.appendChild(div);
+    puntoFooter.appendChild(label);
+    return div;
+  }
+
+  /**
+   * Create a new punto game
+   * @param {*} id
+   */
+  function createPuntoGame(id) {
+    let div = createGameTab(id, "launch");
+
+    let section = elt(
+      "section",
+      {},
+      elt("h2", {}, "Salle d'attente"),
+      createButton("Lancer la partie")
+    );
+
+    let aside = elt("aside", {});
+
+    aside.onclick = (e) => {
+      let target = e.target;
+      if (target.tagName !== "P") {
+        return;
+      }
+
+      if (target.classList.contains("pending")) {
+        // Remove the player from the game
+      } else if (target.classList.contains("others")) {
+        sock.emit("punto", {
+          action: "invite",
+          game: id,
+          player: target.textContent,
+          from: pseudo,
+        });
+      }
+    };
+
+    div.appendChild(section);
+    div.appendChild(aside);
+
+    let players = {};
+    players[pseudo] = { status: "ready" };
+
+    updatePlayersList(id, players);
+  }
+
+  /**
+   * Create the punto invitation screen
+   * @param {string} from The player who invites
+   * @param {number} id The game ID
+   */
+  function createPuntoInvitation(from, id) {
+    let div = createGameTab(id, "join");
+
+    let section = elt(
+      "section",
+      {},
+      elt("h2", {}, `${from} vous invite dans une partie de Punto !`),
+      (() => {
+        let btn = createButton("Rejoindre !");
+        btn.onclick = () => {
+          sock.emit("punto", { action: "join", player: pseudo, game: id });
+        };
+        return btn;
+      })()
+    );
+
+    div.appendChild(section);
+  }
+
+  /**
+   * Update the player list on a launch game screen
+   * @param {number} id The game Id
+   * @param {array} players The players list
+   */
+  function updatePlayersList(id, players) {
+    const aside = document.querySelector(
+      `#punto .game.launch[data-gameid='${id}'] aside`
+    );
+
+    let others = list.filter((p) => !Object.keys(players).includes(p));
+
+    players = Object.keys(players).map(
+      (p) => new Object({ name: p, status: players[p].status })
+    );
+
+    let ready = players.filter((p) => p.status === "ready");
+    let pending = players.filter((p) => p.status === "pending");
+
+    console.table([ready, pending, others]);
+
+    aside.innerHTML = "";
+    if (ready.length > 0) {
+      aside.appendChild(elt("h4", {}, "Prêts"));
+      ready.forEach((p) => {
+        aside.appendChild(elt("p", { class: "ready" }, p.name));
+      });
+    }
+
+    if (pending.length > 0) {
+      aside.appendChild(elt("h4", {}, "Invités"));
+      pending.forEach((p) => {
+        aside.appendChild(elt("p", { class: "pending" }, p.name));
+      });
+    }
+
+    if (others.length > 0) {
+      aside.appendChild(elt("h4", {}, "Autres"));
+      others.forEach((p) => {
+        aside.appendChild(elt("p", { class: "others" }, p));
+      });
+    }
+  }
+
+  function updateGameData(data) {
+    //updatePlayersList(data.game, data.players);
+  }
+
+  /**
+   * Create a button component
+   * @param {string} text The button content
+   * @param {string} attr The button attributs
+   */
+  function createButton(text, attr = {}) {
+    return elt("div", { class: "button", ...attr }, elt("span", {}, text));
+  }
 
   function chifoumiCommandShortcut(e) {
     if (e.target.tagName === "P" && e.target.textContent !== pseudo) {
@@ -177,6 +379,9 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  /**
+   * Connect the user to the server
+   */
   function connect() {
     pseudo = pseudoInput.value.trim();
     if (pseudo.length === 0) {
@@ -188,8 +393,13 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
     sock.emit("login", pseudo);
+    connected = true;
   }
 
+  /**
+   * Send a chifoumi command from the chat
+   * @param {string} text The command content
+   */
   function sendChifoumiCommand(text) {
     let match = text.match(/^\/chifoumi ([^\s]+) ([^\s]+)$/);
 
@@ -239,6 +449,9 @@ document.addEventListener("DOMContentLoaded", function () {
     return;
   }
 
+  /**
+   * Send a message on the chat
+   */
   function sendMessage() {
     let text = messageInput.value.trim();
     messageInput.value = "";
@@ -269,38 +482,6 @@ document.addEventListener("DOMContentLoaded", function () {
       to = to[0].split("@")[1];
     }
     sock.emit("message", { to: to, text: text });
-  }
-
-  function sendPuntoCommand(text) {
-    text = text.trim();
-    let match = text.match(/^\/punto\s+(\S+)\s+(\S+)\s+(\S+)$/);
-    console.table(match);
-
-    // if(/^\/punto\s+create$/.test(text)){
-    //   sock.emit('punto',{action : 'create'});
-    //   return;
-    // }
-
-    // if(/^\/punto\s+invite\s+\S+\s+\d+$/.test(text)){
-    //   let match = text.match(/\/punto\s+invite\s+(\S+)\s+(\d+)/);
-    //   console.log(match[1],match[2]);
-    //   sock.emit('punto',{action : 'invite', game : match[2], player : match[1]});
-    //   return;
-    // }
-
-    // if(/^\/punto\s+join\s+\d+$/.test(text)){
-    //   let match = text.match(/\/punto\s+join\s+(\d+)/);
-    //   console.log(match[1],match[2]);
-    //   sock.emit('punto',{action : 'join', game : match[1], player : pseudo});
-    //   return;
-    // }
-
-    // if(/^\/punto\s+data\s+\d+$/.test(text)){
-    //   let match = text.match(/\/punto\s+data\s+(\d+)/);
-    //   console.log(match[1],match[2]);
-    //   sock.emit('punto',{action : 'data', game : match[1]});
-    //   return;
-    // }
   }
 
   /**
@@ -339,28 +520,24 @@ document.addEventListener("DOMContentLoaded", function () {
     }, 500);
   }
 
-  function guacamole() {
-    document.body.classList.add("guacamole");
-    alert("Mode guacamole spécial M.Dadeau ! :)");
-  }
-
   /**
    * Update the connected clients list
+   * It also add new players on the list on each game launch screen
    */
-  function updateList(list) {
-    list = JSON.parse(list);
+  function updateList(newList) {
+    newList = JSON.parse(newList);
+    let newUsers = newList.filter((u) => !list.includes(u));
 
-    //asideClients.innerHTML = "";
-    Object.keys(list).forEach((client) => {
-      // asideClients.appendChild(
-      //   elt(
-      //     "p",
-      //     {
-      //       "data-score": list[client],
-      //     },
-      //     client
-      //   )
-      // );
+    list = newList;
+
+    // Update the client list
+    asideClients.innerHTML = "";
+    list.forEach((client) => {
+      asideClients.appendChild(elt("p", {}, client));
     });
+
+    for (let game of document.getElementsByClassName("game")) {
+      sock.emit("punto", { action: "data", game: game.dataset.gameid });
+    }
   }
 });
