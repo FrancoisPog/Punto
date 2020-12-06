@@ -235,18 +235,22 @@ io.on("connection", function (socket) {
 
     Punto.removePlayer(player, game);
 
-    let gameData = JSON.parse(Punto.gameData(game));
+    let gameData = Punto.gameData(game);
 
     //socket.emit("punto", { req, status: 0 });
-    for (let p in gameData.players) {
-      log(p);
-      clients[p].emit("punto", { req, game, gameData });
+    for (let p in JSON.parse(gameData).players) {
+      clients[p].emit("punto", {
+        req,
+        status: 0,
+      });
     }
+
+    clients[player].emit("punto", { req, status: 0 });
   }
 
   function createGamePunto(req) {
     let id = Punto.createGame(currentID);
-    console.log("Nouvelle partie créée par " + currentID + " : " + id);
+
     socket.emit("punto", { req, status: 0, game: id });
   }
 
@@ -287,7 +291,6 @@ io.on("connection", function (socket) {
       socket.emit("punto", { req, status: res, content });
       return;
     }
-    console.log(`${player} a bien été invité dans la partie ${game}`);
 
     let gameData = JSON.parse(Punto.gameData(game));
 

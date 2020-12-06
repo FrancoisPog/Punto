@@ -3,6 +3,12 @@
  *                       Punto game module
  ********************************************************************/
 
+/**
+ * Log what happen
+ * @param {string} txt
+ */
+const log = (txt) => console.log("[punto] - " + txt);
+
 let players = {};
 let games = {};
 let static_id = 1;
@@ -57,6 +63,7 @@ export function createGame(creator) {
 
   invitePlayer(id, creator);
   joinGame(id, creator);
+  log(`Game ${id} created by ${creator}.`);
   return id;
 }
 
@@ -88,6 +95,7 @@ export function invitePlayer(gameId, player) {
     game[player] = {
       status: "pending",
     };
+    log(`${player} is invited to game ${gameId}.`);
   }
   return 0;
 }
@@ -115,6 +123,7 @@ export function joinGame(gameId, player) {
   } else {
     game[player].status = "ready";
     game[player].victories = [];
+    log(`${player} joined the game ${gameId}.`);
   }
   return 0;
 }
@@ -135,9 +144,10 @@ export function removePlayer(player, gameId) {
       if (game._status === "pending") {
         // if the game is pending
         delete games[gameId][player];
-
+        log(`${player} was removed from the game ${gameId}`);
         if (!getPlayers(gameId).some((p) => game[p].status === "ready")) {
           delete games[gameId];
+          log(`The empty game ${gameId} was removed.`);
         }
       } else if (games[gameId][player]) {
         // if the game is pending and the player is participating at this game
@@ -369,6 +379,7 @@ export function gameData(gameId) {
   }
 
   let data = {};
+  data.status = game._status;
   if (game._status === "running") {
     data.board = game._board;
     data.nthRound = game._nthRound;

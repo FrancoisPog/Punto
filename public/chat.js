@@ -140,9 +140,7 @@ document.addEventListener("DOMContentLoaded", function () {
     updateList(clientsList);
   });
 
-  sock.on("liste", function (clientsList) {
-    updateList(clientsList);
-  });
+  sock.on("liste", updateList);
 
   sock.on("message", function ({ from, to, text, date }) {
     // System message
@@ -215,10 +213,23 @@ document.addEventListener("DOMContentLoaded", function () {
         break;
       }
       case "data": {
-        updateGameData(data.gameData);
-        updatePlayersList(data.req.game, JSON.parse(data.content).players);
+        if (JSON.parse(data.content).status === "pending") {
+          updatePlayersList(data.req.game, JSON.parse(data.content).players);
+        }
         break;
       }
+      case "remove": {
+        if (data.req.player === pseudo) {
+          deleteGameTab(data.req.game);
+        } else {
+          sock.emit("punto", { action: "data", game: data.req.game });
+        }
+        break;
+      }
+      case "join": {
+        //break;
+      }
+
       default: {
         console.error(`The "${action}" action is not handled !`);
       }
@@ -252,7 +263,7 @@ document.addEventListener("DOMContentLoaded", function () {
    * Create a new punto game
    * @param {*} id
    */
-  function createPuntoGame(id) {
+  function createPuntoGame(id, players) {
     let div = createGameTab(id, "launch");
 
     let section = elt(
@@ -271,7 +282,11 @@ document.addEventListener("DOMContentLoaded", function () {
       }
 
       if (target.classList.contains("pending")) {
-        // Remove the player from the game
+        sock.emit("punto", {
+          action: "remove",
+          game: id,
+          player: target.textContent,
+        });
       } else if (target.classList.contains("others")) {
         sock.emit("punto", {
           action: "invite",
@@ -285,10 +300,26 @@ document.addEventListener("DOMContentLoaded", function () {
     div.appendChild(section);
     div.appendChild(aside);
 
-    let players = {};
-    players[pseudo] = { status: "ready" };
+    if (!players) {
+      players = {};
+      players[pseudo] = { status: "ready" };
+    }
 
     updatePlayersList(id, players);
+  }
+
+  function deleteGameTab(id) {
+    let div = document.querySelector(`#punto .game[data-gameid="${id}"]`);
+    log(div);
+    div.remove();
+    let radio = document.querySelector(`#punto input[id="radio-game-${id}"]`);
+    log(radio);
+    radio.remove();
+    let label = document.querySelector(
+      `#punto footer label[for="radio-game-${id}"]`
+    );
+    log(label);
+    label.remove();
   }
 
   /**
@@ -324,6 +355,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const aside = document.querySelector(
       `#punto .game.launch[data-gameid='${id}'] aside`
     );
+
+    console.log("aside");
 
     let others = list.filter((p) => !Object.keys(players).includes(p));
 
