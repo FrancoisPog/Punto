@@ -145,13 +145,13 @@ export function removePlayer(player, gameId) {
         // if the game is pending
         delete games[gameId][player];
         log(`${player} was removed from the game ${gameId}`);
-        if (!getPlayers(gameId).some((p) => game[p].status === "ready")) {
-          delete games[gameId];
-          log(`The empty game ${gameId} was removed.`);
-        }
       } else if (games[gameId][player]) {
         // if the game is pending and the player is participating at this game
         games[gameId][player].status = "left";
+      }
+      if (!getPlayers(gameId).some((p) => game[p].status === "ready")) {
+        delete games[gameId];
+        log(`The empty game ${gameId} was removed.`);
       }
     }
     return;
@@ -159,6 +159,7 @@ export function removePlayer(player, gameId) {
 
   for (const id in games) {
     removePlayer(player, id);
+    log(`${player} was removed from ${id}`);
   }
 }
 
@@ -410,7 +411,7 @@ export function gameData(gameId) {
  *
  * @param {*} gameId
  * @param {*} player
- * @param {*} index
+ * @param {*} index The card position, if the index == -1, the game will play automatically with a dumb AI
  * @returns {number} `-1` if the game doesn't exist, `-2` if the player doesn't participate, `-3` if the card can be put here, `-4` if the player isn't the current player, `1` on success and if the game is finished
  */
 export function play(gameId, player, index) {
@@ -434,7 +435,7 @@ export function play(gameId, player, index) {
     return -4;
   }
 
-  if (index < 0 || index > 35) {
+  if (index < -1 || index > 35) {
     // Is the position in the board ?
     return -3;
   }
@@ -443,29 +444,46 @@ export function play(gameId, player, index) {
   let board = game._board;
   let nextCurrent = (game._current + 1) % getPlayers(gameId).length;
 
-  if (!board.some((e) => e !== null)) {
-    // Is the board empty ?
-    game._board[index] = card;
-    game._current = nextCurrent;
-    return 0;
-  }
-
-  if (!board[index]) {
-    // Is there a card at this position ?
-    if (!isCardAround(gameId, index)) {
-      game[player].cards.push(card);
-      return -3;
+  // AI
+  if (index === -1) {
+    console.log(card);
+    if (!board.some((c) => c !== null)) {
+      index = 0;
     }
+    for (let i in board) {
+      if (
+        (board[i] === null && isCardAround(gameId, i)) ||
+        (board[i] !== null && board[i].value < card.value)
+      ) {
+        index = i;
+        break;
+      }
+    }
+    log(`AI is playing for ${player} (${index}) in ${gameId}`);
   } else {
-    if (board[index].value >= card.value) {
-      // is the new card greater than the previous ?
-      return -3;
+    if (!board.some((e) => e !== null)) {
+      // Is the board empty ?
+      game._board[index] = card;
+      game._current = nextCurrent;
+      return 0;
+    }
+
+    if (!board[index]) {
+      // Is there a card at this position ?
+      if (!isCardAround(gameId, index)) {
+        game[player].cards.push(card);
+        return -3;
+      }
     } else {
+      if (board[index].value >= card.value) {
+        // is the new card greater than the previous ?
+        game[player].cards.push(card);
+        return -3;
+      }
     }
   }
 
   board[index] = card;
-
   game._current = nextCurrent;
 
   let results = isRoundOver(gameId);
@@ -478,14 +496,12 @@ export function play(gameId, player, index) {
       }
     });
     log(`${winner} win this round.`);
-    log(`Défaussage de la carte ${results.max} ${results.color}`);
+    log(`The card ${results.max} ${results.color} was removed`);
     game._removedCards.push({ value: results.max, color: results.color });
     game._status = "break";
 
     return { reason: results.reason, winner };
   }
-
-  // TODO : AI if the next current are left
 
   return 0;
 }
@@ -554,11 +570,11 @@ export function getCard(gameId, player) {
 export function getGames(player) {
   let list = Object.keys(games);
   if (!player) {
-    return list;
+    return JSON.stringify(list);
   }
-  return list.filter((g) => {
-    Object.keys(games[g]).includes(player);
-  });
+  return JSON.stringify(
+    list.filter((g) => Object.keys(games[g]).includes(player))
+  );
 }
 
 // ***** TEST FUNCTIONS *****
@@ -617,13 +633,20 @@ function getPlayers(gameId) {
  */
 function isCardAround(gameId, index) {
   gameId = Number(gameId);
+  index = Number(index);
   if (!games[gameId]) {
     return -1;
   }
-
+  // console.log("index : " + index);
   let board = games[gameId]._board;
+  // console.table(board);
   for (let i of [1, 5, 6, 7]) {
-    if (board[index - i] || board[index + i]) {
+    if (index - i >= 0 && board[index - i]) {
+      console.log("here -" + i);
+      return true;
+    }
+    if (index + i <= 35 && board[index + i]) {
+      console.log("here +" + i);
       return true;
     }
   }

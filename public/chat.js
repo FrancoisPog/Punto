@@ -154,7 +154,7 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   sock.on("bienvenue", function (clientsList) {
-    //chatMain.innerHTML = "";
+    chatMain.innerHTML = "";
     messageWrapper.appendChild(autoSmileyElt);
     document.body.classList.add("connected");
     document.getElementById("radio_home").checked = true;
@@ -251,14 +251,13 @@ document.addEventListener("DOMContentLoaded", function () {
             deleteGameTab(data.req.game);
             createLaunchedGame(data.req.game, gameData);
           }
-        }
-
-        if (gameData.currentPlayer === pseudo) {
-          sock.emit("punto", {
-            action: "card",
-            game: data.req.game,
-            player: pseudo,
-          });
+          if (gameData.currentPlayer === pseudo) {
+            sock.emit("punto", {
+              action: "card",
+              game: data.req.game,
+              player: pseudo,
+            });
+          }
         }
 
         break;
@@ -422,13 +421,13 @@ document.addEventListener("DOMContentLoaded", function () {
       {},
       elt("h2", {}, "Salle d'attente"),
       createButton("Lancer la partie", {}, () => {
-        for (let p of aside.getElementsByClassName("pending")) {
-          sock.emit("punto", {
-            action: "remove",
-            player: p.textContent,
-            game: id,
-          });
-        }
+        // for (let p of aside.getElementsByClassName("pending")) {
+        //   sock.emit("punto", {
+        //     action: "remove",
+        //     player: p.textContent,
+        //     game: id,
+        //   });
+        // }
         sock.emit("punto", { action: "launch", game: id });
       })
     );
@@ -592,8 +591,16 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function updateGameData(data) {
-    //updatePlayersList(data.game, data.players);
+  function updateGameData(game, data) {
+    for (let p in data.players) {
+      if (data.players[p].status === "left") {
+        document
+          .querySelector(
+            `#punto .game[data-gameid="${game}"] .player[data-pseudo="${p}"]`
+          )
+          .classList.add("left");
+      }
+    }
   }
 
   /**

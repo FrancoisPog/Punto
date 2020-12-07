@@ -121,6 +121,19 @@ io.on("connection", function (socket) {
         text: currentID + " vient de se déconnecter de l'application",
         date: Date.now(),
       });
+
+      console.log(
+        Punto.getGames(currentID),
+        JSON.parse(Punto.getGames(currentID))
+      );
+      JSON.parse(Punto.getGames(currentID)).forEach((g) => {
+        console.log("game" + g);
+        let data = JSON.parse(Punto.gameData(g));
+        if (data.status === "running" && data.currentPlayer === currentID) {
+          playAutoPunto(currentID, g);
+        }
+      });
+
       // suppression de l'entrée
       remove(currentID);
 
@@ -364,6 +377,10 @@ io.on("connection", function (socket) {
       return;
     }
 
+    let playersBeforeLaunch = Object.keys(
+      JSON.parse(Punto.gameData(game)).players
+    );
+
     let res = Punto.launchGame(game);
     if (res !== 0) {
       let content;
@@ -385,8 +402,23 @@ io.on("connection", function (socket) {
       socket.emit("punto", { req, status: res, content });
       return;
     }
-    for (let p in JSON.parse(Punto.gameData(game)).players) {
-      clients[p].emit("punto", { req, status: 0 });
+
+    let playersAfterLaunch = Object.keys(
+      JSON.parse(Punto.gameData(game)).players
+    );
+
+    console.table(playersBeforeLaunch);
+    console.table(playersAfterLaunch);
+
+    for (let p of playersBeforeLaunch) {
+      if (playersAfterLaunch.includes(p)) {
+        clients[p].emit("punto", { req, status: 0 });
+      } else {
+        clients[p].emit("punto", {
+          req: { action: "remove", game, player: p },
+          status: 0,
+        });
+      }
     }
   }
 
@@ -437,12 +469,19 @@ io.on("connection", function (socket) {
     let data = JSON.parse(Punto.gameData(req.game));
     let card = data.board[req.index];
     for (let p in data.players) {
+      if (data.players[p].status === "left") {
+        continue;
+      }
       clients[p].emit("punto", {
         req,
         status: finished ? 1 : 0,
         card,
         next: finished ? null : data.currentPlayer,
       });
+    }
+
+    if (!finished && data.players[data.currentPlayer].status === "left") {
+      playAutoPunto(data.currentPlayer, game);
     }
   }
 
@@ -492,6 +531,7 @@ io.on("connection", function (socket) {
 
     let res = Punto.getCard(game, player);
     if (typeof res !== "string") {
+      let content;
       switch (res) {
         case -1: {
           content = "Cette partie n'existe pas";
@@ -583,6 +623,53 @@ io.on("connection", function (socket) {
 
     for (let p in players) {
       clients[p].emit("punto", { req, status: 0, winner: res.winner });
+    }
+  }
+
+  function playAutoPunto(player, game) {
+    let boardBefore = JSON.parse(Punto.gameData(game)).board;
+    let res = Punto.play(game, player, -1);
+    let data = JSON.parse(Punto.gameData(game));
+    let boardAfter = data.board;
+
+    let index = null;
+    for (let i of Array(36).keys()) {
+      if (boardAfter[i] === null) {
+        continue;
+      }
+
+      if (
+        (boardBefore[i] === null && boardAfter[i] !== null) ||
+        boardAfter[i].color !== boardBefore[i].color ||
+        boardAfter[i].value !== boardBefore[i].value
+      ) {
+        index = i;
+        break;
+      }
+    }
+    console.assert(index !== null);
+    let finished = typeof res === "object";
+
+    let card = boardAfter[index];
+    for (let p in data.players) {
+      if (data.players[p].status === "left") {
+        continue;
+      }
+      clients[p].emit("punto", {
+        req: {
+          action: "play",
+          index,
+          player,
+          game,
+        },
+        status: finished ? 1 : 0,
+        card,
+        next: finished ? null : data.currentPlayer,
+      });
+    }
+
+    if (data.players[data.currentPlayer].status === "left") {
+      playAutoPunto(data.currentPlayer, game);
     }
   }
 });

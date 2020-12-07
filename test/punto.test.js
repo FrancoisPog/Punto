@@ -664,7 +664,7 @@ describe("Respect for the rules of the game", function () {
       let data = JSON.parse(gameData(gameId));
       let player = data.currentPlayer;
 
-      strictEqual(play(gameId, player, -1), -3);
+      strictEqual(play(gameId, player, -2), -3);
       strictEqual(play(gameId, player, 36), -3);
       done();
     });

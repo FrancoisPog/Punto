@@ -580,6 +580,10 @@ body.connected #login {
   align-items: center;
 }
 
+#punto .player.left h2 {
+  text-decoration: line-through;
+}
+
 #punto .player h2 {
   user-select: none;
   font-family: "punto";

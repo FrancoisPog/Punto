@@ -5,11 +5,11 @@
 - Animations
 
 -> Punto
-- coder IA
 - supprimer le joueur des la manche suivante
+- Si une ligne de 4 de la couleur neutre -> on continue
 
 -> Autre
-- Message privé à pluieurs personne
+- Revoir les messages privées
 - Bien afficher les deux couleurs lors d'un jeu à 2 joueurs
 - Afficher message chifoumi chat
 - Bouton quitter
