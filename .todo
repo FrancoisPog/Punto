@@ -6,7 +6,6 @@
 
 -> Punto
 - supprimer le joueur des la manche suivante
-- Si une ligne de 4 de la couleur neutre -> on continue
 
 -> Autre
 - Revoir les messages privées
@@ -15,3 +14,4 @@
 - Bouton quitter
 - Aficher l'heure des messages
 - fix bug connection 
+- au lancement, bine coher les bonnes cb

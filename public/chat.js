@@ -305,7 +305,7 @@ document.addEventListener("DOMContentLoaded", function () {
         if (data.status === 1) {
           displayPopup(
             "Terminé !",
-            `${data.req.player} a gagné cette manche !`,
+            `${data.winner} a gagné cette manche !`,
             "Continuer !"
           );
           if (data.req.player === pseudo) {

@@ -2,12 +2,23 @@
 /********************************************************************
  *                       Punto game module
  ********************************************************************/
+import fs from "fs";
 
 /**
  * Log what happen
  * @param {string} txt
  */
 const log = (txt) => console.log("[punto] - " + txt);
+
+function store(game, text) {
+  // let path = `./logs/${game}.txt`;
+  // text += "\n";
+  // if (fs.existsSync(path)) {
+  //   fs.appendFile(path, text, () => {});
+  //   return;
+  // }
+  // fs.writeFile(path, text, () => {});
+}
 
 let players = {};
 let games = {};
@@ -61,6 +72,8 @@ export function createGame(creator) {
     _removedCards: [],
   };
 
+  store(id, `> Game ${id} created by ${creator}.`);
+
   invitePlayer(id, creator);
   joinGame(id, creator);
   log(`Game ${id} created by ${creator}.`);
@@ -95,7 +108,7 @@ export function invitePlayer(gameId, player) {
     game[player] = {
       status: "pending",
     };
-    log(`${player} is invited to game ${gameId}.`);
+    store(gameId, `> ${player} is invited to game ${gameId}.`);
   }
   return 0;
 }
@@ -302,7 +315,7 @@ export function nextRound(gameId) {
 
     let neutralCards = [];
     let board = game._board;
-    console.log("> Récupération des cartes neutres sur le plateau");
+    // console.log("> Récupération des cartes neutres sur le plateau");
     for (let index in board) {
       if (
         board[index] &&
@@ -315,25 +328,25 @@ export function nextRound(gameId) {
         neutralCards.push(board[index]);
       }
     }
-    console.log(neutralCards);
+    // console.log(neutralCards);
     shuffle(neutralCards);
 
     let toRemove = neutralCards.length % 3;
-    console.log(
-      "Il y a " + toRemove + " cartes neutres à défausser, cartes restantes"
-    );
+    // console.log(
+    //   "Il y a " + toRemove + " cartes neutres à défausser, cartes restantes"
+    // );
     while (toRemove > 0) {
       game._removedCards.push(neutralCards.pop());
       toRemove--;
     }
-    console.log(neutralCards);
+    // console.log(neutralCards);
 
     shuffle(neutralCards);
     let nbNeutralsCards = neutralCards.length;
     for (const p of getPlayers(gameId)) {
       let aThird = neutralCards.slice(0, nbNeutralsCards / 3);
-      console.log("Les cartes suivantes sont pour " + p);
-      console.log(aThird);
+      // console.log("Les cartes suivantes sont pour " + p);
+      // console.log(aThird);
       neutralCards = neutralCards.slice(nbNeutralsCards / 3);
       game[p].cards.push(...aThird);
     }
@@ -343,7 +356,7 @@ export function nextRound(gameId) {
   let removedCards = game._removedCards.slice();
   for (const p of getPlayers(gameId)) {
     for (let color of game[p].colors) {
-      //console.log(`Cartes ${color} pour ${p}`);
+      // console.log(`Cartes ${color} pour ${p}`);
       for (let i = 0; i < 18; ++i) {
         let card = { color, value: 1 + (i % 9) };
         let index = removedCards.findIndex(
@@ -354,7 +367,7 @@ export function nextRound(gameId) {
           removedCards.splice(index, 1);
           continue;
         }
-        //process.stdout.write(`[${card.color[0]}${card.value}]`);
+        // process.stdout.write(`[${card.color[0]}${card.value}]`);
         game[p].cards.push(card);
       }
       //console.log("");
@@ -386,6 +399,7 @@ export function gameData(gameId) {
     data.board = game._board;
     data.nthRound = game._nthRound;
     data.removedCards = game._removedCards;
+    // cwonsole.dir(game, { depth: null });
   }
 
   let list = Object.create(null);
@@ -426,6 +440,8 @@ export function play(gameId, player, index) {
     // Does player participate to game ?
     return -2;
   }
+
+  // console.dir(game, { depth: null });
 
   if (game._status !== "running") {
     return -5;
@@ -591,6 +607,13 @@ export function getBoard(gameId) {
   return games[gameId]._board;
 }
 
+export function getGame(gameId) {
+  if (!games[gameId]) {
+    return -1;
+  }
+  return games[gameId];
+}
+
 /**
  * @private
  * @param {*} gameId
@@ -606,6 +629,10 @@ if (process.env.NODE_ENV !== "test") {
   };
 
   getAllCards = function () {
+    throw new Error("The use of this function is reserved for tests");
+  };
+
+  getGame = function () {
     throw new Error("The use of this function is reserved for tests");
   };
 }
@@ -642,11 +669,9 @@ function isCardAround(gameId, index) {
   // console.table(board);
   for (let i of [1, 5, 6, 7]) {
     if (index - i >= 0 && board[index - i]) {
-      console.log("here -" + i);
       return true;
     }
     if (index + i <= 35 && board[index + i]) {
-      console.log("here +" + i);
       return true;
     }
   }
@@ -671,13 +696,28 @@ function isRoundOver(gameId) {
     return -1;
   }
 
-  if (!canPlay(game._board, getCard(gameId, getCurrentPlayer(gameId)))) {
+  let neutralColor;
+  if (getPlayers(gameId).length === 3) {
+    let colors = ["blue", "orange", "red", "green"];
+    for (let p of getPlayers(gameId)) {
+      colors = colors.filter((c) => !game[p].colors.includes(c));
+    }
+    neutralColor = colors[0];
+    console.log(neutralColor);
+  }
+
+  if (
+    !canPlay(game._board, JSON.parse(getCard(gameId, getCurrentPlayer(gameId))))
+  ) {
     let visited = {};
     let count = {};
     for (let index in game._board) {
       let resBrowsing = browseColorRaw(game._board, index, visited, {});
       if (resBrowsing.rowLength >= (getPlayers(gameId).length > 2 ? 3 : 4)) {
         let color = resBrowsing.color;
+        if (color == neutralColor) {
+          continue;
+        }
         if (!count[color]) {
           count[color] = {
             count: 1,
@@ -691,6 +731,8 @@ function isRoundOver(gameId) {
         }
       }
     }
+
+    console.log(count);
 
     let max = -1,
       color,
@@ -719,8 +761,10 @@ function isRoundOver(gameId) {
   let visited = {};
   for (let index in board) {
     let resBrowsing = browseColorRaw(board, index, visited, {});
+    if (resBrowsing.color === neutralColor) {
+      continue;
+    }
     if (resBrowsing.rowLength >= (getPlayers(gameId).length > 2 ? 4 : 5)) {
-      //console.log("sum"+resBrowsing.sum+" max : "+resBrowsing.max);
       return {
         reason: "4cards",
         max: resBrowsing.max,
@@ -795,6 +839,7 @@ function browseColorRaw(board, index, visited, { direction, color }) {
 }
 
 function canPlay(board, card) {
+  console.log(board, card);
   let value = card.value;
   for (let i in board) {
     if (board[i] === null || board[i].value < value) {

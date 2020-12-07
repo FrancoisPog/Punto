@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "test": "NODE_ENV=test mocha --exit ./test/*.js ",
-    "test-coverage" : "nyc npm run test ",
+    "test-coverage": "nyc npm run test ",
     "start": "node .",
     "format": "prettier --version ;prettier --write ."
   },

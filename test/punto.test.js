@@ -14,6 +14,7 @@ import {
   getAllCards,
   nextRound,
   gameResult,
+  getGame,
 } from "../games/punto.js";
 
 describe("Creation of a game and players management", function () {
@@ -713,6 +714,13 @@ describe("Respect for the rules of the game", function () {
     it(`${NB_PLAYERS} players | A row of 4 cards of the same suit ends the round - diagonal`, function (done) {
       let gameId = launchGameQuickly(NB_PLAYERS);
 
+      if (NB_PLAYERS === 3) {
+        let gameObject = getGame(gameId);
+        gameObject["Luffy"].colors = ["green"];
+        gameObject["Sanji"].colors = ["blue"];
+        gameObject["Zoro"].colors = ["red"];
+      }
+
       let board = getBoard(gameId);
 
       board[9] = Card("red", 3);
@@ -771,6 +779,13 @@ describe("Respect for the rules of the game", function () {
     it(`${NB_PLAYERS} players | A row of 4 cards of the same suit ends the round - vertical`, function (done) {
       let gameId = launchGameQuickly(NB_PLAYERS);
 
+      if (NB_PLAYERS === 3) {
+        let gameObject = getGame(gameId);
+        gameObject["Luffy"].colors = ["green"];
+        gameObject["Sanji"].colors = ["blue"];
+        gameObject["Zoro"].colors = ["red"];
+      }
+
       let board = getBoard(gameId);
       board[14] = Card("blue", 4);
       board[15] = Card("red", 4);
@@ -789,6 +804,7 @@ describe("Respect for the rules of the game", function () {
       //printBoard(board);
 
       let data = JSON.parse(gameData(gameId));
+      //console.dir(data, { depth: null });
       let player = data.currentPlayer;
       let winner = Object.keys(data.players).filter((p) =>
         data.players[p].colors.includes("blue")
@@ -825,6 +841,13 @@ describe("Respect for the rules of the game", function () {
 
     it(`${NB_PLAYERS} players | A row of 4 cards of the same suit ends the round - horizontal`, function (done) {
       let gameId = launchGameQuickly(NB_PLAYERS);
+
+      if (NB_PLAYERS === 3) {
+        let gameObject = getGame(gameId);
+        gameObject["Luffy"].colors = ["green"];
+        gameObject["Sanji"].colors = ["blue"];
+        gameObject["Zoro"].colors = ["red"];
+      }
 
       let board = getBoard(gameId);
 
@@ -948,7 +971,22 @@ describe("Respect for the rules of the game", function () {
     it(`${NB_PLAYERS} players | The round is over if the current player can't play`, function (done) {
       let gameId = launchGameQuickly(NB_PLAYERS);
 
-      let board = getBoard(gameId);
+      let game = getGame(gameId);
+      game["Luffy"].order = 1;
+      game["Zoro"].order = 2;
+      game._current = 1;
+
+      game["Luffy"].colors = NB_PLAYERS === 2 ? ["blue", "red"] : ["blue"];
+      game["Zoro"].colors = NB_PLAYERS === 2 ? ["orange", "green"] : ["green"];
+
+      if (NB_PLAYERS > 2) {
+        game["Sanji"].colors = ["red"];
+        if (NB_PLAYERS === 4) {
+          game["Usopp"].colors = ["orange"];
+        }
+      }
+
+      let board = game._board;
 
       let colors = ["blue", "green", "red", "orange"];
       for (let i = 0; i < 35; ++i) {
@@ -972,25 +1010,26 @@ describe("Respect for the rules of the game", function () {
         board[31] = Card("blue", 3);
       }
 
+      // console.table(board);
+
       //printBoard(board)
 
       let data = JSON.parse(gameData(gameId));
 
-      getAllCards(gameId, data.currentPlayer).push(Card("orange", 5));
+      game["Luffy"].cards.push(Card("orange", 8));
+      game["Zoro"].cards.push(Card("blue", 4));
 
-      let winner = Object.keys(data.players).filter((p) =>
-        data.players[p].colors.includes("blue")
-      )[0];
+      // console.dir(game, { depth: null });
 
-      deepStrictEqual(play(gameId, data.currentPlayer, 35), {
+      deepStrictEqual(play(gameId, "Luffy", 35), {
         reason: "blocked",
-        winner,
+        winner: "Luffy",
       });
 
       data = JSON.parse(gameData(gameId));
 
       for (const p in data.players) {
-        if (p === winner) {
+        if (p === "Luffy") {
           deepStrictEqual(data.players[p].victories, [1]);
         } else {
           deepStrictEqual(data.players[p].victories, []);
@@ -1005,171 +1044,192 @@ describe("Respect for the rules of the game", function () {
 
       done();
     });
+  }
 
-    it(`${NB_PLAYERS} players | Good card distribution for a new round`, function (done) {
-      let gameId = launchGameQuickly(NB_PLAYERS);
+  it(`2 players | Good distribution of card after a new round`, function (done) {
+    let gameId = launchGameQuickly(2);
 
-      let data = JSON.parse(gameData(gameId));
+    // Game configuration
+    let game = getGame(gameId);
 
-      // Configure the board
+    game["Luffy"].colors = ["blue", "orange"];
+    game["Zoro"].colors = ["red", "green"];
+    game["Zoro"].cards = [];
+    game["Luffy"].cards = [];
+    game._current = game["Luffy"].order;
 
-      let board = getBoard(gameId);
-      if (NB_PLAYERS === 2) {
-        board[1] = Card("green", 3);
-      }
+    let board = game._board;
+    board[7] = Card("blue", 4);
+    board[8] = Card("blue", 5);
+    board[9] = Card("red", 4);
+    board[10] = Card("green", 1);
+    board[14] = Card("blue", 7);
+    board[15] = Card("green", 7);
+    board[16] = Card("red", 6);
+    board[17] = Card("orange", 7);
+    board[20] = Card("green", 3);
+    board[21] = Card("blue", 3);
+    board[22] = Card("red", 7);
+    board[23] = Card("orange", 4);
+    board[27] = Card("green", 7);
+    board[28] = Card("blue", 5);
 
-      board[4] = Card("blue", 2);
-      board[8] = Card("green", 5);
-      board[9] = Card("blue", 6);
-      board[13] = Card("red", 4);
-      board[14] = Card("orange", 4);
-      board[15] = Card("green", 4);
-      board[16] = Card("blue", 7);
-      board[19] = Card("orange", 9);
-      board[20] = Card("red", 8);
-      board[21] = Card("blue", 8);
-      board[22] = Card("green", 6);
-      board[26] = Card("red", 9);
-      board[29] = Card("green", 5);
-
-      /**
-       * Remove the first occurence of a card in an array
-       * @param {*} arr
-       * @param {*} card
-       */
-      function rmCard(arr, card) {
-        for (let index in arr) {
-          let mycard = arr[index];
-          if (mycard.color === card.color && mycard.value === card.value) {
-            //console.log(card);
-            arr.splice(index, 1);
-            return true;
-          }
-        }
-        return false;
-      }
-
-      // Remove used cards from players cards
-      for (let card of board) {
-        if (!card) {
-          continue;
-        }
-        for (let p in data.players) {
-          if (rmCard(getAllCards(gameId, p), card)) {
-            break;
-          }
-        }
-      }
-
-      board[29] = null;
-      if (NB_PLAYERS === 2) {
-        board[1] = null;
-      }
-      getAllCards(gameId, data.currentPlayer).push(Card("green", 5));
-
-      // Define the winner
-      let winner = Object.keys(data.players).filter((p) =>
-        data.players[p].colors.includes("green")
-      )[0];
-
-      // Play until win
-      if (NB_PLAYERS === 2) {
-        deepStrictEqual(play(gameId, data.currentPlayer, 29), 0);
-        data = JSON.parse(gameData(gameId));
-        getAllCards(gameId, data.currentPlayer).push(Card("green", 3));
-        deepStrictEqual(play(gameId, data.currentPlayer, 1), {
-          reason: "4cards",
-          winner,
-        });
-      } else {
-        deepStrictEqual(play(gameId, data.currentPlayer, 29), {
-          reason: "4cards",
-          winner,
-        });
-      }
-
-      // Launch the second round
-      nextRound(gameId);
-
-      data = JSON.parse(gameData(gameId));
-      strictEqual(data.nthRound, 2);
-      deepStrictEqual(data.board, Array(36).fill(null));
-      if (winner) {
-        deepStrictEqual(data.players[winner].victories, [1]);
-      }
-
-      // Tests the number of removed cards
-      if (NB_PLAYERS !== 3) {
-        for (let p in data.players) {
-          if (p === winner) {
-            strictEqual(getAllCards(gameId, p).length, 72 / NB_PLAYERS - 1);
+    let tmp = [...board.slice().filter((e) => e !== null), Card("blue", 6)];
+    for (let p of ["Luffy", "Zoro"]) {
+      for (let color of game[p].colors) {
+        for (let i of Array(18).keys()) {
+          let value = (i % 9) + 1;
+          let card = Card(color, value);
+          let index = tmp.findIndex(
+            (c) => c.color === color && c.value === value
+          );
+          if (index === -1) {
+            game[p].cards.push(card);
             continue;
           }
-          strictEqual(getAllCards(gameId, p).length, 72 / NB_PLAYERS);
-        }
-        strictEqual(data.removedCards.length, 1);
-      } else {
-        // Determine the neutral color
-        let colors = ["blue", "green", "red", "orange"];
-        for (const p in data.players) {
-          colors = colors.filter((c) => c !== data.players[p].colors[0]);
-        }
-        strictEqual(colors.length, 1);
-        let restColor = colors[0];
-        //console.log(restColor);
-
-        // Determine the number of removed cards expected
-        let numberOfRemovedCards = 0;
-        if (restColor === "orange") {
-          numberOfRemovedCards = 2;
-        } else if (restColor === "blue") {
-          numberOfRemovedCards = 1;
-        }
-        strictEqual(data.removedCards.length, 1 + numberOfRemovedCards);
-      }
-
-      // Check if the best card of the 4 row is removed
-      strictEqual(
-        data.removedCards.some((c) => c.color === "green" && c.value === 6),
-        true
-      );
-
-      // Test if all cards exist in player stacks
-      let allCards = [];
-      // Create all cards
-      for (let color of ["blue", "red", "orange", "green"]) {
-        for (let i = 0; i < 18; ++i) {
-          allCards.push(Card(color, 1 + (i % 9)));
+          tmp.splice(index, 1);
         }
       }
+    }
 
-      //console.log(data.removedCards);
-      // Remove removed card from allCards
-      while (data.removedCards.length > 0) {
-        let card = data.removedCards.pop();
-        rmCard(allCards, card);
-      }
+    game["Luffy"].cards.push(Card("blue", 6));
 
-      //console.log(allCards.length);
+    //console.dir(game, { depth: null });
 
-      // Test if all and only of allCards are used
-      for (let p in data.players) {
-        for (let card of getAllCards(gameId, p)) {
-          let index = allCards.findIndex(
-            (c) => c.color === card.color && c.value === card.value
-          );
-          rmCard(allCards, card);
-          //console.log(card);
-          notStrictEqual(index, -1);
-        }
-      }
-
-      strictEqual(allCards.length, 0);
-
-      //strictEqual(1, 2)
-      done();
+    deepStrictEqual(play(gameId, "Luffy", 35), {
+      reason: "4cards",
+      winner: "Luffy",
     });
-  }
+
+    strictEqual(nextRound(gameId), 0);
+
+    strictEqual(game["Luffy"].cards.length, 35);
+    strictEqual(game["Zoro"].cards.length, 36);
+
+    for (let p of ["Luffy", "Zoro"]) {
+      for (let color of game[p].colors) {
+        for (let i of Array(9).keys()) {
+          strictEqual(
+            p === "Luffy" && color === "blue" && i + 1 === 7 ? 1 : 2,
+            game[p].cards.reduce((count, card) => {
+              if (card.color === color && card.value === i + 1) {
+                return count + 1;
+              }
+              return count;
+            }, 0)
+          );
+        }
+      }
+    }
+
+    done();
+  });
+  it(`3 players | Good distribution of card after a new round`, function (done) {
+    let gameId = launchGameQuickly(3);
+
+    // Game configuration
+    let game = getGame(gameId);
+
+    game["Luffy"].colors = ["blue"];
+    game["Zoro"].colors = ["red"];
+    game["Sanji"].colors = ["orange"];
+    game["Zoro"].cards = [];
+    game["Luffy"].cards = [];
+    game["Sanji"].cards = [];
+    game._current = game["Luffy"].order;
+
+    let board = game._board;
+    board[7] = Card("blue", 4);
+    board[8] = Card("blue", 5);
+    board[9] = Card("red", 4);
+    board[10] = Card("green", 1);
+    board[14] = Card("blue", 7);
+    board[15] = Card("green", 7);
+    board[16] = Card("red", 6);
+    board[17] = Card("orange", 7);
+    board[20] = Card("green", 3);
+    board[21] = Card("blue", 3);
+    board[22] = Card("red", 7);
+    board[23] = Card("orange", 4);
+    board[27] = Card("green", 7);
+
+    let tmp = [...board.slice().filter((e) => e !== null), Card("blue", 5)];
+
+    let greenCards = [];
+    for (let i of Array(18).keys()) {
+      let value = (i % 9) + 1;
+      let card = Card("green", value);
+      let index = tmp.findIndex(
+        (c) => c.color === "green" && c.value === value
+      );
+      if (index === -1) {
+        greenCards.push(card);
+        continue;
+      }
+      tmp.splice(index, 1);
+    }
+
+    game["Zoro"].cards = greenCards.splice(0, 4);
+    game["Luffy"].cards = greenCards.splice(0, 5);
+    game["Sanji"].cards = greenCards.splice(0, 5);
+
+    for (let p of ["Luffy", "Zoro", "Sanji"]) {
+      for (let color of game[p].colors) {
+        for (let i of Array(18).keys()) {
+          let value = (i % 9) + 1;
+          let card = Card(color, value);
+          let index = tmp.findIndex(
+            (c) => c.color === color && c.value === value
+          );
+          if (index === -1) {
+            game[p].cards.push(card);
+            continue;
+          }
+          tmp.splice(index, 1);
+        }
+      }
+    }
+
+    game["Luffy"].cards.push(Card("blue", 5));
+
+    //console.dir(game, { depth: null });
+
+    deepStrictEqual(play(gameId, "Luffy", 28), {
+      reason: "4cards",
+      winner: "Luffy",
+    });
+
+    strictEqual(nextRound(gameId), 0);
+
+    strictEqual(game["Luffy"].cards.length, 23);
+    strictEqual(game["Zoro"].cards.length, 23);
+    strictEqual(game["Sanji"].cards.length, 24);
+
+    for (let p of ["Luffy", "Zoro", "Sanji"]) {
+      for (let color of game[p].colors) {
+        for (let i of Array(9).keys()) {
+          strictEqual(
+            p === "Luffy" && color === "blue" && i + 1 === 7 ? 1 : 2,
+            game[p].cards.reduce((count, card) => {
+              if (card.color === color && card.value === i + 1) {
+                return count + 1;
+              }
+              return count;
+            }, 0)
+          );
+        }
+      }
+    }
+
+    greenCards = [];
+    for (let p of ["Luffy", "Zoro", "Sanji"]) {
+      greenCards.push(...game[p].cards.filter((c) => c.color === "green"));
+    }
+
+    strictEqual(greenCards.length, 17);
+
+    done();
+  });
 });
 
 describe("Game result", function () {

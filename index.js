@@ -407,8 +407,8 @@ io.on("connection", function (socket) {
       JSON.parse(Punto.gameData(game)).players
     );
 
-    console.table(playersBeforeLaunch);
-    console.table(playersAfterLaunch);
+    // console.table(playersBeforeLaunch);
+    // console.table(playersAfterLaunch);
 
     for (let p of playersBeforeLaunch) {
       if (playersAfterLaunch.includes(p)) {
@@ -477,6 +477,7 @@ io.on("connection", function (socket) {
         status: finished ? 1 : 0,
         card,
         next: finished ? null : data.currentPlayer,
+        winner: finished ? res.winner : null,
       });
     }
 
