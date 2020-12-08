@@ -605,7 +605,9 @@ io.on("connection", function (socket) {
 
     let data = JSON.parse(Punto.gameData(req.game));
     for (let p in data.players) {
-      clients[p].emit("punto", { req, status: res });
+      if (data.players[p].status === "ready") {
+        clients[p].emit("punto", { req, status: res });
+      }
     }
   }
 

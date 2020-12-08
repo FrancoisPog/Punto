@@ -14,6 +14,11 @@ const number = [
   "nine",
 ];
 
+const speaker = window.speechSynthesis;
+function speak(text) {
+  speaker.speak(new SpeechSynthesisUtterance(text));
+}
+
 document.addEventListener("DOMContentLoaded", function () {
   // Socket connection
   let sock = io.connect();
@@ -244,6 +249,7 @@ document.addEventListener("DOMContentLoaded", function () {
       case "create": {
         console.assert(data.game);
         createPuntoGame(data.game);
+        speak(`Vous venez de créer une nouvelle partie !`);
         break;
       }
       case "invite": {
@@ -259,7 +265,10 @@ document.addEventListener("DOMContentLoaded", function () {
       case "data": {
         let gameData = JSON.parse(data.content);
         let status = gameData.status;
-        if (status === "pending") {
+        if (
+          status === "pending" &&
+          gameData.players[pseudo].status === "ready"
+        ) {
           updatePlayersList(data.req.game, gameData.players);
         } else if (status === "running") {
           // First turn ?
@@ -273,6 +282,13 @@ document.addEventListener("DOMContentLoaded", function () {
               board.classList.add("past");
               board.onclick = () => {
                 board.remove();
+                if (gameData.currentPlayer === pseudo) {
+                  sock.emit("punto", {
+                    action: "card",
+                    game: data.req.game,
+                    player: pseudo,
+                  });
+                }
               };
 
               deleteGameTab(data.req.game);
@@ -282,13 +298,6 @@ document.addEventListener("DOMContentLoaded", function () {
               );
               gameFrame.appendChild(board);
 
-              if (gameData.currentPlayer === pseudo) {
-                sock.emit("punto", {
-                  action: "card",
-                  game: data.req.game,
-                  player: pseudo,
-                });
-              }
               return;
             } else {
               deleteGameTab(data.req.game);
@@ -318,6 +327,9 @@ document.addEventListener("DOMContentLoaded", function () {
         if (data.req.player === pseudo) {
           deleteGameTab(data.req.game);
           createPuntoGame(data.req.game);
+          speak("Vous venez de rejoindre la partie");
+        } else {
+          speak(`${data.req.player} vient de rejoindre la partie ! `);
         }
         sock.emit("punto", { action: "data", game: data.req.game });
         break;
@@ -329,6 +341,7 @@ document.addEventListener("DOMContentLoaded", function () {
       case "card": {
         let card = JSON.parse(data.content);
         updatePlayerCard(data.req.game, card);
+        speak("C'est à votre tour de jouer");
         break;
       }
       case "play": {
@@ -460,6 +473,9 @@ document.addEventListener("DOMContentLoaded", function () {
           game: id,
           player: target.textContent,
         });
+        speak(
+          `Vous venez de supprimer l'invitation pour ${target.textContent} !`
+        );
       } else if (target.classList.contains("others")) {
         sock.emit("punto", {
           action: "invite",
@@ -467,6 +483,7 @@ document.addEventListener("DOMContentLoaded", function () {
           player: target.textContent,
           from: pseudo,
         });
+        speak(`Vous venez d'envoyer une invitation à ${target.textContent} !`);
       }
     };
 
@@ -515,10 +532,12 @@ document.addEventListener("DOMContentLoaded", function () {
     );
   }
 
-  function createLaunchedGame(id, gameData, ...previousBoard) {
+  function createLaunchedGame(id, gameData) {
     let div = createGameTab(id, "play");
 
+    let players = [];
     for (let player in gameData.players) {
+      players.push(player);
       let playerElt = elt(
         "div",
         {
@@ -564,11 +583,14 @@ document.addEventListener("DOMContentLoaded", function () {
       sock.emit("punto", { action: "play", game: id, index, player: pseudo });
     };
     div.appendChild(board);
+    speak(`La partie avec ${players.join(", ")} vient d'être lancée`);
   }
 
   function deleteGameTab(id) {
     let div = document.querySelector(`#punto .game[data-gameid="${id}"]`);
-    log(div);
+    if (!div) {
+      return;
+    }
     div.remove();
     let radio = document.querySelector(`#punto input[id="radio-game-${id}"]`);
     log(radio);
@@ -603,6 +625,7 @@ document.addEventListener("DOMContentLoaded", function () {
     );
 
     div.appendChild(section);
+    speak(`${from} vous invite à jouer au Punto !`);
   }
 
   /**
@@ -614,8 +637,6 @@ document.addEventListener("DOMContentLoaded", function () {
     const aside = document.querySelector(
       `#punto .game.launch[data-gameid='${id}'] aside`
     );
-
-    console.log("aside");
 
     let others = list.filter((p) => !Object.keys(players).includes(p));
 
@@ -677,9 +698,10 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   function displayPopup(title, text, button) {
-    document.getElementById("popup-title").textContent = title;
-    document.getElementById("popup-text").textContent = text;
-    document.getElementById("popup-btn").firstChild.textContent = button;
+    speak(`${title} ${text}`);
+    document.getElementById("popup-title").innerHTML = title;
+    document.getElementById("popup-text").innerHTML = text;
+    document.getElementById("popup-btn").firstChild.innerHTML = button;
     document.getElementById("popup-cb").checked = true;
   }
 
@@ -821,6 +843,7 @@ document.addEventListener("DOMContentLoaded", function () {
     );
     chatMain.appendChild(msg);
     msg.scrollIntoView();
+    speaker.speak(new SpeechSynthesisUtterance(`Message de ${from} : ${text}`));
   }
 
   function buzz() {
@@ -846,7 +869,7 @@ document.addEventListener("DOMContentLoaded", function () {
       asideClients.appendChild(elt("p", {}, client));
     });
 
-    for (let game of document.getElementsByClassName("game")) {
+    for (let game of document.querySelectorAll(".game:not(.join)")) {
       sock.emit("punto", { action: "data", game: game.dataset.gameid });
     }
   }

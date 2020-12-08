@@ -651,6 +651,7 @@ export function getGames(player) {
   if (!player) {
     return JSON.stringify(list);
   }
+  console.log(list);
   return JSON.stringify(
     list.filter((g) => Object.keys(games[g]).includes(player))
   );
@@ -776,6 +777,8 @@ function isRoundOver(gameId) {
     let count = {};
     for (let index in game._board) {
       let resBrowsing = browseColorRaw(game._board, index, visited, {});
+      // console.log(`2:${index}`);
+      // console.dir(resBrowsing);
       if (resBrowsing.rowLength >= (getPlayers(gameId).length > 2 ? 3 : 4)) {
         let color = resBrowsing.color;
         if (color == neutralColor) {
@@ -823,6 +826,8 @@ function isRoundOver(gameId) {
   let visited = {};
   for (let index in board) {
     let resBrowsing = browseColorRaw(board, index, visited, {});
+    // console.log(`1:${index}`);
+    // console.dir(resBrowsing);
     if (resBrowsing.color === neutralColor) {
       continue;
     }
@@ -861,7 +866,7 @@ function browseColorRaw(board, index, visited, { direction, color }) {
   }
 
   if (!direction) {
-    direction = [1, 5, 6, 7];
+    direction = [1, 5, 6, 7]; // TODO revoir direction en fonction de si on est sur un bord
   } else {
     direction = [direction];
   }
@@ -873,27 +878,38 @@ function browseColorRaw(board, index, visited, { direction, color }) {
   }
 
   let rowLength = 1;
-
   let sum = board[index].value;
   let max = sum;
   for (let i of direction) {
+    let sum_tmp = board[index].value;
+    let max_tmp = sum_tmp;
     let res = 1;
-    let resNeg = browseColorRaw(board, index - i, visited, {
-      direction: i,
-      color,
-    });
-    let resPos = browseColorRaw(board, index + i, visited, {
-      direction: i,
-      color,
-    });
+
+    let resNeg = { rowLength: 0, color, sum: 0, max: 0 };
+
+    if (!((i === 7 && index % 6 === 0) || (i === 5 && (index + 1) % 6 === 0))) {
+      resNeg = browseColorRaw(board, index - i, visited, {
+        direction: i,
+        color,
+      });
+    }
+
+    let resPos = { rowLength: 0, color, sum: 0, max: 0 };
+
+    if (!((i === 5 && index % 6 === 0) || (i === 7 && (index + 1) % 6 === 0))) {
+      resPos = browseColorRaw(board, index + i, visited, {
+        direction: i,
+        color,
+      });
+    }
 
     res += resNeg.rowLength + resPos.rowLength;
 
     if (res > rowLength) {
       rowLength = res;
       //console.log("res = ",resNeg.sum,"+",resPos.sum)
-      max = Math.max(resNeg.max, resPos.max, max);
-      sum += resNeg.sum + resPos.sum;
+      max = Math.max(resNeg.max, resPos.max, max_tmp);
+      sum = sum_tmp + resNeg.sum + resPos.sum;
     }
   }
 

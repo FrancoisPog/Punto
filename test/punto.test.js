@@ -1739,7 +1739,7 @@ describe("Respect for the rules of the game", function () {
   });
 
   it("Good distribution af cards after a new round with lost players : 2 -> 0", function (done) {
-    let gameId = launchGameQuickly(4);
+    let gameId = launchGameQuickly(2);
 
     // Game configuration
     let game = getGame(gameId);
@@ -1766,6 +1766,7 @@ describe("Respect for the rules of the game", function () {
     board[22] = Card("red", 7);
     board[23] = Card("orange", 4);
     board[27] = Card("green", 7);
+    board[28] = Card("blue", 5);
 
     let tmp = [
       ...board.slice().filter((e) => e !== null),
@@ -1791,21 +1792,84 @@ describe("Respect for the rules of the game", function () {
       }
     }
 
-    game["Luffy"].cards.push(Card("blue", 5));
+    game["Luffy"].cards.push(Card("blue", 1));
 
     //console.dir(game, { depth: null });
-    removePlayer("Usopp", gameId);
-    removePlayer("Zoro", gameId);
-    removePlayer("Luffy", gameId);
 
-    deepStrictEqual(play(gameId, "Luffy", 28), {
+    removePlayer("Zoro", gameId);
+
+    deepStrictEqual(play(gameId, "Luffy", 35), {
       reason: "4cards",
       winner: "Luffy",
     });
-
-    removePlayer("Sanji", gameId);
+    removePlayer("Luffy", gameId);
 
     strictEqual(-1, nextRound(gameId));
+
+    done();
+  });
+
+  it("Good round winner - blocked", function (done) {
+    let gameId = launchGameQuickly(2);
+
+    let game = getGame(gameId);
+
+    game["Luffy"].colors = ["blue", "red"];
+    game["Zoro"].colors = ["green", "orange"];
+    game._current = game["Zoro"].order;
+
+    let board = game._board;
+
+    board[0] = Card("green", 8);
+    board[1] = Card("red", 4);
+    board[2] = Card("orange", 6);
+    board[3] = Card("blue", 9);
+    board[4] = Card("green", 8);
+    board[5] = Card("orange", 4);
+
+    board[6] = Card("blue", 4);
+    board[7] = Card("green", 5);
+    board[8] = Card("green", 6);
+    board[9] = Card("blue", 5);
+    board[10] = Card("blue", 9);
+    board[11] = Card("orange", 9);
+
+    board[12] = Card("blue", 4);
+    board[13] = Card("green", 9);
+    board[14] = Card("green", 7);
+    board[15] = Card("blue", 7);
+    board[16] = Card("red", 8);
+    board[17] = Card("orange", 9);
+
+    board[18] = Card("red", 9);
+    board[19] = Card("green", 7);
+    board[20] = Card("red", 8);
+    board[21] = Card("blue", 8);
+    board[22] = Card("orange", 8);
+    board[23] = Card("red", 7);
+
+    board[24] = Card("orange", 7);
+    board[25] = Card("green", 5);
+    board[26] = Card("orange", 4);
+    board[27] = Card("orange", 7);
+    board[28] = Card("red", 9);
+    board[29] = Card("blue", 7);
+
+    board[30] = Card("blue", 6);
+    board[31] = Card("red", 6);
+    board[32] = Card("orange", 5);
+    board[33] = Card("red", 5);
+    board[34] = Card("red", 7);
+
+    game["Zoro"].cards.push(Card("green", 9));
+    game["Luffy"].cards.push(Card("blue", 1));
+
+    deepStrictEqual(play(gameId, "Zoro", 35), {
+      winner: "Zoro",
+      reason: "blocked",
+    });
+
+    deepStrictEqual(game._removedCards, [{ color: "green", value: 9 }]);
 
     done();
   });
