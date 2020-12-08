@@ -15,3 +15,13 @@
 - Aficher l'heure des messages
 - fix bug connection 
 - au lancement, bine coher les bonnes cb
+
+
+
+
+
+
+changement de nombre de joueurs
+4 -> 3 : Redistribution complète de la couleur en tant que couleur neutre
+4 -> 2 : Redistribution complète d'une couleur à chaque joueur 
+3 -> 2 : Redistribution complète de la couleur neutre et de la nouvelle couleur aux 2 joueurs

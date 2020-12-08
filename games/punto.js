@@ -231,6 +231,8 @@ export function launchGame(gameId) {
     }
   }
 
+  game._neutralColor = colors.length === 1 ? colors.pop() : null;
+
   // Cards
 
   for (const p of getPlayers(gameId)) {
@@ -248,7 +250,7 @@ export function launchGame(gameId) {
 
     let restCards = [];
     for (let i = 0; i < 18; ++i) {
-      restCards.push({ color: colors[0], value: (i % 9) + 1 });
+      restCards.push({ color: game._neutralColor, value: (i % 9) + 1 });
     }
 
     shuffle(restCards);
@@ -269,7 +271,7 @@ export function launchGame(gameId) {
 /**
  * Launch a new game
  * @param {number} gameId
- * @return {number} `0` on success , `-1` if the game doesn't exist, `-2` if the game isn't pending for next round,  `1` if the game is terminate
+ * @return {number} `0` on success , `-1` if the game doesn't exist, `-2` if the game isn't pending for next round,  `1` if the game is terminate, `2` if only one player is still playing
  */
 export function nextRound(gameId) {
   gameId = Number(gameId);
@@ -289,43 +291,77 @@ export function nextRound(gameId) {
     }
   }
 
-  game._nthRound++;
-  game._current = Math.floor(Math.random() * getPlayers(gameId).length);
-  game._status = "running";
+  let nbLostPlayer = 0;
+  let newColors = [];
+  for (let p of getPlayers(gameId)) {
+    if (game[p].status === "left") {
+      nbLostPlayer++;
+      newColors.push(...game[p].colors);
+      delete game[p];
+      if (getPlayers(gameId).length < 2) {
+        return 2;
+      }
+    }
+  }
+
+  let dropAllNeutralCards = false;
+
+  if (nbLostPlayer > 0) {
+    for (let color of newColors) {
+      game._removedCards = game._removedCards.filter((c) => c.color !== color);
+    }
+    let nbPlayers = getPlayers(gameId).length;
+    if (nbPlayers === 2) {
+      if (nbLostPlayer === 2) {
+        for (let p of getPlayers(gameId)) {
+          game[p].colors.push(newColors.pop());
+        }
+      } else if (nbLostPlayer === 1) {
+        let restColor = game._neutralColor;
+
+        game[getPlayers(gameId)[0]].colors.push(restColor);
+        game[getPlayers(gameId)[1]].colors.push(newColors[0]);
+
+        game._removedCards = game._removedCards.filter(
+          (c) => c.color !== restColor
+        );
+        game._neutralColor = null;
+      }
+    } else if (nbPlayers === 3) {
+      dropAllNeutralCards = true;
+    }
+  }
 
   //Cards
-
   //console.log("> Suppression des cartes correspondant à la couleur du joueur");
   for (let p of getPlayers(gameId)) {
-    game[p].cards = game[p].cards.filter(
-      (c) => !game[p].colors.includes(c.color)
-    );
+    game[p].cards = game[p].cards.filter((c) => c.color === game._neutralColor);
     // console.log("Cartes restantes pour " + p);
     // console.log(game[p].cards);
   }
 
   if (getPlayers(gameId).length === 3) {
-    let colors = ["blue", "green", "red", "orange"];
-    let restColor;
-    for (const p of getPlayers(gameId)) {
-      colors = colors.filter((c) => c !== game[p].colors[0]);
-    }
-    console.assert(colors.length === 1);
-    restColor = colors[0];
+    let restColor = game._neutralColor;
 
     let neutralCards = [];
-    let board = game._board;
-    // console.log("> Récupération des cartes neutres sur le plateau");
-    for (let index in board) {
-      if (
-        board[index] &&
-        board[index].color === restColor &&
-        !game._removedCards.some(
-          (c) =>
-            c.color === board[index].color && c.value === board[index].value
-        )
-      ) {
-        neutralCards.push(board[index]);
+    if (!dropAllNeutralCards) {
+      let board = game._board;
+      // console.log("> Récupération des cartes neutres sur le plateau");
+      for (let index in board) {
+        if (
+          board[index] &&
+          board[index].color === restColor &&
+          !game._removedCards.some(
+            (c) =>
+              c.color === board[index].color && c.value === board[index].value
+          )
+        ) {
+          neutralCards.push(board[index]);
+        }
+      }
+    } else {
+      for (let i of Array(18).keys) {
+        neutralCards.push(Card(restColor, (i % 9) + 1));
       }
     }
     // console.log(neutralCards);
@@ -374,6 +410,15 @@ export function nextRound(gameId) {
       shuffle(game[p].cards);
     }
   }
+
+  let order = 0;
+  for (let p of getPlayers(gameId)) {
+    game[p].order = order++;
+  }
+
+  game._nthRound++;
+  game._current = Math.floor(Math.random() * getPlayers(gameId).length);
+  game._status = "running";
 
   game._board = Array(36).fill(null);
 
@@ -538,11 +583,16 @@ export function gameResult(gameId) {
     return -2;
   }
 
-  let winner = getPlayers(gameId).filter(
-    (p) => game[p].victories.length === 2
-  )[0];
+  let res;
+  if (getPlayers(gameId) < 2) {
+    res = { winner: getPlayers(gameId).pop() };
+  } else {
+    let winner = getPlayers(gameId).filter(
+      (p) => game[p].victories.length === 2
+    )[0];
 
-  let res = { winner };
+    res = { winner };
+  }
 
   delete games[gameId];
 
@@ -852,7 +902,7 @@ function canPlay(board, card) {
 function getCurrentPlayer(gameId) {
   gameId = Number(gameId);
   let game = games[gameId];
-  for (const p in game) {
+  for (const p of getPlayers(gameId)) {
     if (game[p].order === game._current) {
       return p;
     }
