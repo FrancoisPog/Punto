@@ -561,6 +561,13 @@ body.connected #login {
   grid-template-rows: repeat(6, 1fr);
 }
 
+#punto .board.past {
+  filter: brightness(0.7);
+}
+#punto .board.past .card.none:hover {
+  background-color: inherit;
+}
+
 #punto .board,
 #punto .player {
   transition: all 500ms;
@@ -590,22 +597,48 @@ body.connected #login {
   font-weight: 500;
   font-size: 2rem;
   padding-left: 5px;
+  position: relative;
 }
 
-#punto .player.green h2 {
+#punto .player[data-color1="green"] h2 {
   border-left: 5px solid var(--punto-green);
 }
 
-#punto .player.blue h2 {
+#punto .player[data-color1="blue"] h2 {
   border-left: 5px solid var(--punto-blue);
 }
 
-#punto .player.red h2 {
+#punto .player[data-color1="red"] h2 {
   border-left: 5px solid var(--punto-red);
 }
 
-#punto .player.orange h2 {
+#punto .player[data-color1="orange"] h2 {
   border-left: 5px solid var(--punto-orange);
+}
+
+#punto .player[data-color2] h2::before {
+  position: absolute;
+  display: inline-block;
+  content: "";
+  height: 100%;
+  width: 5px;
+  left: -10px;
+}
+
+#punto .player[data-color2="green"] h2::before {
+  background-color: var(--punto-green);
+}
+
+#punto .player[data-color2="blue"] h2::before {
+  background-color: var(--punto-blue);
+}
+
+#punto .player[data-color2="red"] h2::before {
+  background-color: var(--punto-red);
+}
+
+#punto .player[data-color2="orange"] h2::before {
+  background-color: var(--punto-orange);
 }
 
 #punto .player:nth-child(1) {
@@ -889,7 +922,7 @@ body.connected #login {
 }
 
 #autocomplete p {
-  padding: 15px;
+  padding: 1.5rem;
   background: rgba(245, 245, 245, 0.9);
   border-radius: 5rem;
   margin: 1rem;

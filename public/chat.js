@@ -37,6 +37,11 @@ document.addEventListener("DOMContentLoaded", function () {
   let puntoFrame = document.getElementById("frame");
   let puntoFooter = document.querySelector("#punto > footer");
   let messageWrapper = document.getElementById("textInput");
+  let btnQuitGame = document.getElementById("quitGame");
+  let home_radio = document.getElementById("radio_home");
+  let backHome = document.getElementById("backHome");
+  let popup_radio = document.getElementById("popup-cb");
+  popup_radio.checked = false;
 
   // Display login screen
   document.body.classList.remove("connected");
@@ -81,6 +86,22 @@ document.addEventListener("DOMContentLoaded", function () {
 
   messageInput.onblur = () => {
     messageWrapper.classList.remove("focus");
+  };
+
+  btnQuitGame.onclick = quitGame;
+
+  function quitGame() {
+    let gameTab = document.querySelector(
+      "#punto input[name='punto-frame']:checked + .game"
+    );
+    if (gameTab) {
+      let id = gameTab.dataset.gameid;
+      sock.emit("punto", { action: "remove", game: id, player: pseudo });
+    }
+  }
+
+  backHome.onclick = () => {
+    home_radio.checked = true;
   };
 
   btnConnect.onclick = connect;
@@ -146,9 +167,6 @@ document.addEventListener("DOMContentLoaded", function () {
   // *****    SOCKECT     *****
 
   sock.on("erreur-connexion", function (msg) {
-    if (connected) {
-      return;
-    }
     alert(msg);
     pseudo = null;
   });
@@ -248,8 +266,34 @@ document.addEventListener("DOMContentLoaded", function () {
           if (gameData.board.some((c) => c !== null)) {
             updateGameData(data.req.game, gameData);
           } else {
-            deleteGameTab(data.req.game);
-            createLaunchedGame(data.req.game, gameData);
+            if (gameData.nthRound > 1) {
+              let board = document.querySelector(
+                `#punto .game[data-gameid="${data.req.game}"] .board`
+              );
+              board.classList.add("past");
+              board.onclick = () => {
+                board.remove();
+              };
+
+              deleteGameTab(data.req.game);
+              createLaunchedGame(data.req.game, gameData);
+              let gameFrame = document.querySelector(
+                `#punto .game[data-gameid="${data.req.game}"]`
+              );
+              gameFrame.appendChild(board);
+
+              if (gameData.currentPlayer === pseudo) {
+                sock.emit("punto", {
+                  action: "card",
+                  game: data.req.game,
+                  player: pseudo,
+                });
+              }
+              return;
+            } else {
+              deleteGameTab(data.req.game);
+              createLaunchedGame(data.req.game, gameData);
+            }
           }
           if (gameData.currentPlayer === pseudo) {
             sock.emit("punto", {
@@ -263,7 +307,7 @@ document.addEventListener("DOMContentLoaded", function () {
         break;
       }
       case "remove": {
-        if (data.req.player === pseudo) {
+        if (data.status === 1 || data.req.player === pseudo) {
           deleteGameTab(data.req.game);
         } else {
           sock.emit("punto", { action: "data", game: data.req.game });
@@ -291,7 +335,7 @@ document.addEventListener("DOMContentLoaded", function () {
         let card = document.querySelector(
           `#punto .game.play[data-gameid="${
             data.req.game
-          }"] > .board .card:nth-child(${data.req.index + 1})`
+          }"] > .board:not(.past) .card:nth-child(${data.req.index + 1})`
         );
 
         card.className = `card ${data.card.color} ${
@@ -305,9 +349,12 @@ document.addEventListener("DOMContentLoaded", function () {
         if (data.status === 1) {
           displayPopup(
             "Terminé !",
-            `${data.winner} a gagné cette manche !`,
-            "Continuer !"
+            `${
+              data.winner ? data.winner + " " : "Personne n'"
+            }a gagné cette manche !<br/> Cliquer sur le plateau pour continuer`,
+            "OK !"
           );
+
           if (data.req.player === pseudo) {
             sock.emit("punto", { action: "next", game: data.req.game });
           }
@@ -325,7 +372,7 @@ document.addEventListener("DOMContentLoaded", function () {
         break;
       }
       case "next": {
-        if (data.status === 1) {
+        if (data.status > 0) {
           sock.emit("punto", { action: "winner", game: data.req.game });
           return;
         }
@@ -334,11 +381,18 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       case "winner": {
         displayPopup(
-          `${data.winner} gagne la partie !`,
-          `Après avoir gagné deux manches, ${data.winner} gagne et termine cette partie !`,
+          `Terminé !`,
+          `${data.winner} gagne cette partie !`,
           "Terminer !"
         );
-        deleteGameTab(data.req.game);
+        let board = document.querySelector(
+          `#punto .game[data-gameid="${data.req.game}"] .board`
+        );
+        board.classList.add("past");
+        board.onclick = () => {
+          quitGame();
+          deleteGameTab(data.req.game);
+        };
 
         break;
       }
@@ -461,15 +515,20 @@ document.addEventListener("DOMContentLoaded", function () {
     );
   }
 
-  function createLaunchedGame(id, gameData) {
+  function createLaunchedGame(id, gameData, ...previousBoard) {
     let div = createGameTab(id, "play");
 
     for (let player in gameData.players) {
       let playerElt = elt(
         "div",
         {
-          class: "player " + gameData.players[player].colors.join(" "),
+          class: "player ",
           "data-pseudo": player,
+          "data-color1": gameData.players[player].colors[0],
+          "data-color2":
+            Object.keys(gameData.players).length === 2
+              ? gameData.players[player].colors[1]
+              : "",
         },
         elt("h2", {}, player),
         createCard("back")
@@ -519,6 +578,7 @@ document.addEventListener("DOMContentLoaded", function () {
     );
     log(label);
     label.remove();
+    home_radio.checked = true;
   }
 
   /**

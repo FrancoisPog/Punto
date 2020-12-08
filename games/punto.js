@@ -246,7 +246,6 @@ export function launchGame(gameId) {
 
   if (nbReady === 3) {
     // Give to each player 6 cards of the last color
-    console.assert(colors.length === 1);
 
     let restCards = [];
     for (let i = 0; i < 18; ++i) {
@@ -271,7 +270,7 @@ export function launchGame(gameId) {
 /**
  * Launch a new game
  * @param {number} gameId
- * @return {number} `0` on success , `-1` if the game doesn't exist, `-2` if the game isn't pending for next round,  `1` if the game is terminate, `2` if only one player is still playing
+ * @return {number} `0` on success , `-1` if the game doesn't exist, `-2` if the game isn't pending for next round,  `1` if the game is terminate, `2` if only one player is still playing, `3` if the game is empty
  */
 export function nextRound(gameId) {
   gameId = Number(gameId);
@@ -298,10 +297,16 @@ export function nextRound(gameId) {
       nbLostPlayer++;
       newColors.push(...game[p].colors);
       delete game[p];
-      if (getPlayers(gameId).length < 2) {
-        return 2;
-      }
     }
+  }
+
+  let nbPlayers = getPlayers(gameId).length;
+
+  if (nbPlayers === 0) {
+    delete games[gameId]; // Delete the game because useless
+  } else if (nbPlayers === 1) {
+    game._status = "finished";
+    return 2; // prevent that the game can't continue
   }
 
   let dropAllNeutralCards = false;
@@ -310,7 +315,7 @@ export function nextRound(gameId) {
     for (let color of newColors) {
       game._removedCards = game._removedCards.filter((c) => c.color !== color);
     }
-    let nbPlayers = getPlayers(gameId).length;
+
     if (nbPlayers === 2) {
       if (nbLostPlayer === 2) {
         for (let p of getPlayers(gameId)) {
@@ -508,7 +513,7 @@ export function play(gameId, player, index) {
 
   // AI
   if (index === -1) {
-    console.log(card);
+    // console.log(card);
     if (!board.some((c) => c !== null)) {
       index = 0;
     }
@@ -557,9 +562,16 @@ export function play(gameId, player, index) {
         winner = p;
       }
     });
-    log(`${winner} win this round.`);
-    log(`The card ${results.max} ${results.color} was removed`);
-    game._removedCards.push({ value: results.max, color: results.color });
+
+    if (!winner) {
+      log(`No winner for this round`);
+      winner = null;
+    } else {
+      log(`${winner} win this round.`);
+      log(`The card ${results.max} ${results.color} was removed`);
+      game._removedCards.push({ value: results.max, color: results.color });
+    }
+
     game._status = "break";
 
     return { reason: results.reason, winner };
@@ -585,7 +597,7 @@ export function gameResult(gameId) {
   }
 
   let res;
-  if (getPlayers(gameId) < 2) {
+  if (getPlayers(gameId).length < 2) {
     res = { winner: getPlayers(gameId).pop() };
   } else {
     let winner = getPlayers(gameId).filter(
@@ -595,7 +607,7 @@ export function gameResult(gameId) {
     res = { winner };
   }
 
-  delete games[gameId];
+  // delete games[gameId];
 
   return res;
 }
@@ -754,7 +766,7 @@ function isRoundOver(gameId) {
       colors = colors.filter((c) => !game[p].colors.includes(c));
     }
     neutralColor = colors[0];
-    console.log(neutralColor);
+    // console.log(neutralColor);
   }
 
   if (
@@ -769,6 +781,7 @@ function isRoundOver(gameId) {
         if (color == neutralColor) {
           continue;
         }
+        console.log(index, resBrowsing);
         if (!count[color]) {
           count[color] = {
             count: 1,
@@ -795,13 +808,11 @@ function isRoundOver(gameId) {
         color = c;
         maxCard = count[c].max;
         sum = count[c].sum;
-      } else if (count[c].count === max) {
-        if (sum > count[c].sum) {
-          max = count[c].count;
-          color = c;
-          maxCard = count[c].max;
-          sum = count[c].sum;
-        }
+      } else if (count[c].count === max && sum > count[c].sum) {
+        max = count[c].count;
+        color = c;
+        maxCard = count[c].max;
+        sum = count[c].sum;
       }
     }
 
@@ -890,7 +901,7 @@ function browseColorRaw(board, index, visited, { direction, color }) {
 }
 
 function canPlay(board, card) {
-  console.log(board, card);
+  // console.log(board, card);
   let value = card.value;
   for (let i in board) {
     if (board[i] === null || board[i].value < value) {

@@ -4,24 +4,12 @@
 - jeu qui parle (robot ?)
 - Animations
 
--> Punto
-- supprimer le joueur des la manche suivante
-
 -> Autre
 - Revoir les messages privées
 - Bien afficher les deux couleurs lors d'un jeu à 2 joueurs
-- Afficher message chifoumi chat
 - Bouton quitter
 - Aficher l'heure des messages
 - fix bug connection 
-- au lancement, bine coher les bonnes cb
+- au lancement, bien coher les bonnes cb 
 
 
-
-
-
-
-changement de nombre de joueurs
-4 -> 3 : Redistribution complète de la couleur en tant que couleur neutre
-4 -> 2 : Redistribution complète d'une couleur à chaque joueur 
-3 -> 2 : Redistribution complète de la couleur neutre et de la nouvelle couleur aux 2 joueurs

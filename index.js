@@ -122,10 +122,6 @@ io.on("connection", function (socket) {
         date: Date.now(),
       });
 
-      console.log(
-        Punto.getGames(currentID),
-        JSON.parse(Punto.getGames(currentID))
-      );
       JSON.parse(Punto.getGames(currentID)).forEach((g) => {
         console.log("game" + g);
         let data = JSON.parse(Punto.gameData(g));
@@ -256,16 +252,32 @@ io.on("connection", function (socket) {
       return;
     }
 
+    let gameDataBefore = JSON.parse(Punto.gameData(game));
+
+    if (
+      gameDataBefore.status === "running" &&
+      gameDataBefore.currentPlayer === req.player
+    ) {
+      playAutoPunto(req.player, game);
+    }
+
     Punto.removePlayer(player, game);
 
     let gameData = Punto.gameData(game);
 
-    //socket.emit("punto", { req, status: 0 });
-    for (let p in JSON.parse(gameData).players) {
-      clients[p].emit("punto", {
-        req,
-        status: 0,
-      });
+    if (gameData === -1) {
+      for (let p in gameDataBefore.players) {
+        if (gameDataBefore.players[p].status === "pending") {
+          clients[p].emit("punto", { req, status: 1 });
+        }
+      }
+    } else {
+      for (let p in JSON.parse(gameData).players) {
+        clients[p].emit("punto", {
+          req,
+          status: 0,
+        });
+      }
     }
 
     clients[player].emit("punto", { req, status: 0 });
@@ -363,7 +375,7 @@ io.on("connection", function (socket) {
     }
 
     let players = JSON.parse(Punto.gameData(game)).players;
-    console.log(players);
+    // console.log(players);
     for (let p in players) {
       clients[p].emit("punto", { req, status: 0 });
     }
@@ -377,9 +389,11 @@ io.on("connection", function (socket) {
       return;
     }
 
-    let playersBeforeLaunch = Object.keys(
-      JSON.parse(Punto.gameData(game)).players
-    );
+    let dataBefore = JSON.parse(Punto.gameData(game));
+    let playersBeforeLaunch = [];
+    if (dataBefore) {
+      playersBeforeLaunch = Object.keys(dataBefore.players);
+    }
 
     let res = Punto.launchGame(game);
     if (res !== 0) {
@@ -569,7 +583,7 @@ io.on("connection", function (socket) {
     }
 
     let res = Punto.nextRound(game);
-    if (res !== 0) {
+    if (res < 0) {
       let content;
       switch (res) {
         case -1: {
@@ -585,6 +599,8 @@ io.on("connection", function (socket) {
           break;
         }
       }
+      socket.emit("punto", { req, status: res, content });
+      return;
     }
 
     let data = JSON.parse(Punto.gameData(req.game));
@@ -620,6 +636,8 @@ io.on("connection", function (socket) {
           break;
         }
       }
+      socket.emit("punto", { req, status: res, content });
+      return;
     }
 
     for (let p in players) {
