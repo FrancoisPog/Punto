@@ -329,6 +329,7 @@ export function nextRound(gameId) {
       }
     } else if (nbPlayers === 3) {
       dropAllNeutralCards = true;
+      game._neutralColor = newColors.pop();
     }
   }
 
@@ -360,8 +361,8 @@ export function nextRound(gameId) {
         }
       }
     } else {
-      for (let i of Array(18).keys) {
-        neutralCards.push(Card(restColor, (i % 9) + 1));
+      for (let i of Array(18).keys()) {
+        neutralCards.push({ color: restColor, value: (i % 9) + 1 });
       }
     }
     // console.log(neutralCards);

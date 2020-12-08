@@ -1548,6 +1548,119 @@ describe("Respect for the rules of the game", function () {
 
     done();
   });
+
+  it("Good distribution af cards after a new round with lost players : 4 -> 3", function (done) {
+    let gameId = launchGameQuickly(4);
+
+    // Game configuration
+    let game = getGame(gameId);
+
+    game["Luffy"].colors = ["blue"];
+    game["Zoro"].colors = ["red"];
+    game["Sanji"].colors = ["orange"];
+    game["Usopp"].colors = ["green"];
+    game["Zoro"].cards = [];
+    game["Luffy"].cards = [];
+    game["Sanji"].cards = [];
+    game["Usopp"].cards = [];
+    game._current = game["Luffy"].order;
+    game._removedCards.push(Card("green", 8));
+    game._removedCards.push(Card("red", 2));
+
+    let board = game._board;
+    board[7] = Card("blue", 4);
+    board[8] = Card("blue", 5);
+    board[9] = Card("red", 4);
+    board[10] = Card("green", 1);
+    board[14] = Card("blue", 7);
+    board[15] = Card("green", 7);
+    board[16] = Card("red", 6);
+    board[17] = Card("orange", 7);
+    board[20] = Card("green", 3);
+    board[21] = Card("blue", 3);
+    board[22] = Card("red", 7);
+    board[23] = Card("orange", 4);
+    board[27] = Card("green", 7);
+
+    let tmp = [
+      ...board.slice().filter((e) => e !== null),
+      Card("blue", 5),
+      Card("green", 8),
+      Card("red", 2),
+    ];
+
+    for (let p of ["Luffy", "Zoro", "Sanji", "Usopp"]) {
+      for (let color of game[p].colors) {
+        for (let i of Array(18).keys()) {
+          let value = (i % 9) + 1;
+          let card = Card(color, value);
+          let index = tmp.findIndex(
+            (c) => c.color === color && c.value === value
+          );
+          if (index === -1) {
+            game[p].cards.push(card);
+            continue;
+          }
+          tmp.splice(index, 1);
+        }
+      }
+    }
+
+    game["Luffy"].cards.push(Card("blue", 5));
+
+    //console.dir(game, { depth: null });
+
+    deepStrictEqual(play(gameId, "Luffy", 28), {
+      reason: "4cards",
+      winner: "Luffy",
+    });
+
+    removePlayer("Usopp", gameId);
+
+    console.dir(game, { depth: null });
+
+    strictEqual(0, nextRound(gameId));
+
+    console.dir(game, { depth: null });
+
+    strictEqual(game["Luffy"].colors.length, 1);
+    strictEqual(game["Sanji"].colors.length, 1);
+    strictEqual(game["Zoro"].colors.length, 1);
+
+    strictEqual(game["Luffy"].colors.includes("blue"), true);
+    strictEqual(game["Sanji"].colors.includes("orange"), true);
+    strictEqual(game["Zoro"].colors.includes("red"), true);
+
+    strictEqual(
+      false,
+      game._removedCards.some((c) => c.color === "green")
+    );
+
+    strictEqual(game["Zoro"].cards.length, 23);
+    strictEqual(game["Sanji"].cards.length, 24);
+    strictEqual(game["Luffy"].cards.length, 23);
+
+    for (let p of ["Zoro", "Sanji", "Luffy"]) {
+      for (let color of game[p].colors) {
+        for (let i of Array(9).keys()) {
+          strictEqual(
+            (p === "Zoro" && color === "red" && i + 1 === 2) ||
+              (p === "Luffy" && color === "blue" && i + 1 === 7)
+              ? 1
+              : 2,
+            game[p].cards.reduce((count, card) => {
+              if (card.color === color && card.value === i + 1) {
+                return count + 1;
+              }
+              return count;
+            }, 0)
+          );
+        }
+      }
+    }
+
+    done();
+  });
 });
 
 describe("Game result", function () {
