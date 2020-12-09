@@ -2,23 +2,12 @@
 /********************************************************************
  *                       Punto game module
  ********************************************************************/
-import fs from "fs";
 
 /**
  * Log what happen
  * @param {string} txt
  */
 const log = (txt) => console.log("[punto] - " + txt);
-
-function store(game, text) {
-  // let path = `./logs/${game}.txt`;
-  // text += "\n";
-  // if (fs.existsSync(path)) {
-  //   fs.appendFile(path, text, () => {});
-  //   return;
-  // }
-  // fs.writeFile(path, text, () => {});
-}
 
 let players = {};
 let games = {};
@@ -72,8 +61,6 @@ export function createGame(creator) {
     _removedCards: [],
   };
 
-  store(id, `> Game ${id} created by ${creator}.`);
-
   invitePlayer(id, creator);
   joinGame(id, creator);
   log(`Game ${id} created by ${creator}.`);
@@ -108,7 +95,6 @@ export function invitePlayer(gameId, player) {
     game[player] = {
       status: "pending",
     };
-    store(gameId, `> ${player} is invited to game ${gameId}.`);
   }
   return 0;
 }
@@ -327,9 +313,7 @@ export function nextRound(gameId) {
         game[getPlayers(gameId)[0]].colors.push(restColor);
         game[getPlayers(gameId)[1]].colors.push(newColors[0]);
 
-        game._removedCards = game._removedCards.filter(
-          (c) => c.color !== restColor
-        );
+        game._removedCards = game._removedCards.filter((c) => c.color !== restColor);
         game._neutralColor = null;
       }
     } else if (nbPlayers === 3) {
@@ -357,10 +341,7 @@ export function nextRound(gameId) {
         if (
           board[index] &&
           board[index].color === restColor &&
-          !game._removedCards.some(
-            (c) =>
-              c.color === board[index].color && c.value === board[index].value
-          )
+          !game._removedCards.some((c) => c.color === board[index].color && c.value === board[index].value)
         ) {
           neutralCards.push(board[index]);
         }
@@ -401,9 +382,7 @@ export function nextRound(gameId) {
       // console.log(`Cartes ${color} pour ${p}`);
       for (let i = 0; i < 18; ++i) {
         let card = { color, value: 1 + (i % 9) };
-        let index = removedCards.findIndex(
-          (c) => c.color === card.color && c.value === card.value
-        );
+        let index = removedCards.findIndex((c) => c.color === card.color && c.value === card.value);
         if (index !== -1) {
           //console.log("remove!!! "+card.color+""+card.value);
           removedCards.splice(index, 1);
@@ -518,10 +497,7 @@ export function play(gameId, player, index) {
       index = 0;
     }
     for (let i in board) {
-      if (
-        (board[i] === null && isCardAround(gameId, i)) ||
-        (board[i] !== null && board[i].value < card.value)
-      ) {
+      if ((board[i] === null && isCardAround(gameId, i)) || (board[i] !== null && board[i].value < card.value)) {
         index = i;
         break;
       }
@@ -600,9 +576,7 @@ export function gameResult(gameId) {
   if (getPlayers(gameId).length < 2) {
     res = { winner: getPlayers(gameId).pop() };
   } else {
-    let winner = getPlayers(gameId).filter(
-      (p) => game[p].victories.length === 2
-    )[0];
+    let winner = getPlayers(gameId).filter((p) => game[p].victories.length === 2)[0];
 
     res = { winner };
   }
@@ -652,12 +626,12 @@ export function getGames(player) {
     return JSON.stringify(list);
   }
   console.log(list);
-  return JSON.stringify(
-    list.filter((g) => Object.keys(games[g]).includes(player))
-  );
+  return JSON.stringify(list.filter((g) => Object.keys(games[g]).includes(player)));
 }
 
-// ***** TEST FUNCTIONS *****
+// *************************************************
+//               TEST FUNCTIONS
+// *************************************************
 
 /**
  * @private
@@ -701,7 +675,9 @@ if (process.env.NODE_ENV !== "test") {
   };
 }
 
-// ***** INTERNAL FUNCTIONS *****
+// *************************************************
+//              INTERNAL FUNCTIONS
+// *************************************************
 
 /**
  * Get the player of a given game
@@ -732,11 +708,15 @@ function isCardAround(gameId, index) {
   let board = games[gameId]._board;
   // console.table(board);
   for (let i of [1, 5, 6, 7]) {
-    if (index - i >= 0 && board[index - i]) {
-      return true;
+    if (!((i === 7 && index % 6 === 0) || (i === 5 && (index + 1) % 6 === 0))) {
+      if (index - i >= 0 && board[index - i]) {
+        return true;
+      }
     }
-    if (index + i <= 35 && board[index + i]) {
-      return true;
+    if (!((i === 5 && index % 6 === 0) || (i === 7 && (index + 1) % 6 === 0))) {
+      if (index + i <= 35 && board[index + i]) {
+        return true;
+      }
     }
   }
   return false;
@@ -770,9 +750,7 @@ function isRoundOver(gameId) {
     // console.log(neutralColor);
   }
 
-  if (
-    !canPlay(game._board, JSON.parse(getCard(gameId, getCurrentPlayer(gameId))))
-  ) {
+  if (!canPlay(game._board, JSON.parse(getCard(gameId, getCurrentPlayer(gameId))))) {
     let visited = {};
     let count = {};
     for (let index in game._board) {

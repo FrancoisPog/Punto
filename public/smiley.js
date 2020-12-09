@@ -4039,243 +4039,245 @@ const emojis = [
 
 // This module allow to autocomplete smiley in a text input
 // How to use :
-//    - Call 'autoCompleteSmileys' each time you want to activate the aucomplete system
+//    - Call 'listen()' each time you want to activate the aucomplete system
 //    - You can use isOpen() to check if the selection area is opened
 
-let autoSmileyElt = elt("div", { id: "autocomplete" });
-let selected = -1;
-let textInput = null;
+const SmileysSystem = (function () {
+  let dom = elt("div", { id: "autocomplete" });
+  let selected = -1;
+  let textInput = null;
 
-/**
- * Check a short name and return an array of all smileys containing this shortname
- * @param {string} text The (partial) emoji shortname
- * @return {{emoji:string,code:string}[]}
- */
-function matchSmileys(text) {
-  text = text.substr(1).toLowerCase();
-  return emojis.filter((emoji) =>
-    emoji.code.toLowerCase().match(new RegExp(`[:_]${text}`))
-  );
-}
-
-/**
- * Replace all emoji shortname by the emoji
- * @param {string} text The original text
- * @return {string} The parsed text
- */
-function parseSmileys(text) {
-  for (let match of text.matchAll(/:[^\s]+:/g)) {
-    let code = match[0];
-    let matchedSmiley = emojis.find((s) => s.code === code);
-    if (matchedSmiley) {
-      text = text.replace(code, matchedSmiley.emoji);
-    }
+  /**
+   * Check a short name and return an array of all smileys containing this shortname
+   * @param {string} text The (partial) emoji shortname
+   * @return {{emoji:string,code:string}[]}
+   */
+  function matchSmileys(text) {
+    text = text.substr(1).toLowerCase();
+    return emojis.filter((emoji) => emoji.code.toLowerCase().match(new RegExp(`[:_]${text}`)));
   }
-  return text;
-}
 
-/**
- * **Activate the smileys auto-complete system** <br/>
- * Call this function each time you want to check if a smiley can be autocomplete.<br/>
- * The events I recommend to listen are `focus`, `input`, `click` & `keyup` (not `keydown` !)
- * @param e The event triggered
- * @param {HTMLInputElement} input The text input to listen
- */
-function autoCompleteSmileys(e, input) {
-  textInput = input;
-  // Clear the selection area, but reset the selected emoji only if the autocomplete area is closed or if the key is not an arrow
-  clear(!(isOpen() && (e.key === "ArrowUp" || e.key === "ArrowDown")));
-
-  let smileyShortcutMatches = input.value.match(/:[^\s:]{2,}/g);
-
-  if (smileyShortcutMatches) {
-    let i = 0;
-    let caretPos = input.selectionStart;
-    while (
-      i < smileyShortcutMatches.length &&
-      input.value.indexOf(smileyShortcutMatches[i]) +
-        smileyShortcutMatches[i].length !==
-        caretPos
-    ) {
-      i++;
+  /**
+   * Replace all emoji shortname by the emoji
+   * @param {string} text The original text
+   * @return {string} The parsed text
+   */
+  function parseSmileys(text) {
+    for (let match of text.matchAll(/:[^\s]+:/g)) {
+      let code = match[0];
+      let matchedSmiley = emojis.find((s) => s.code === code);
+      if (matchedSmiley) {
+        text = text.replace(code, matchedSmiley.emoji);
+      }
     }
+    return text;
+  }
 
-    if (i === smileyShortcutMatches.length) {
-      return;
-    }
+  /**
+   * **Activate the smileys auto-complete system** <br/>
+   * Call this function each time you want to check if a smiley can be autocomplete.<br/>
+   * The events I recommend to listen are `focus`, `input`, `click` & `keyup` (not `keydown` !)
+   * @param e The event triggered
+   * @param {HTMLInputElement} input The text input to listen
+   */
+  function autoCompleteSmileys(e, input) {
+    textInput = input;
+    // Clear the selection area, but reset the selected emoji only if the autocomplete area is closed or if the key is not an arrow
+    clear(!(isOpen() && (e.key === "ArrowUp" || e.key === "ArrowDown")));
 
-    let smileyShortcut = smileyShortcutMatches[i];
+    let smileyShortcutMatches = input.value.match(/:[^\s:]{2,}/g);
 
-    let smileyMatches = matchSmileys(smileyShortcut).splice(-8);
+    if (smileyShortcutMatches) {
+      let i = 0;
+      let caretPos = input.selectionStart;
+      while (
+        i < smileyShortcutMatches.length &&
+        input.value.indexOf(smileyShortcutMatches[i]) + smileyShortcutMatches[i].length !== caretPos
+      ) {
+        i++;
+      }
 
-    if (!smileyMatches) {
-      return;
-    }
-
-    for (let smileyMatch of smileyMatches) {
-      add(smileyMatch);
-    }
-
-    if (selected < 0 && smileyMatches.length > 0) {
-      selected = 0;
-    }
-
-    // Autocomplete with the selected smiley
-    autoSmileyElt.onclick = () => {
-      execute(caretPos - smileyShortcut.length, caretPos, input);
-    };
-
-    // Select the emoji under the pointer
-    autoSmileyElt.onmousemove = (e) => {
-      let emojiElt = e.target;
-      let index = -1;
-
-      Array.from(autoSmileyElt.children).forEach((child, i) => {
-        child.classList.remove("selected");
-        if (child === emojiElt) {
-          index = i;
-        }
-      });
-      if (index === -1) {
+      if (i === smileyShortcutMatches.length) {
         return;
       }
-      emojiElt.classList.add("selected");
-      selected = index;
-    };
 
-    input.addEventListener("keydown", selectSmiley);
+      let smileyShortcut = smileyShortcutMatches[i];
 
-    // If the user click outside of the input and the selection zone, clear it
-    document.body.addEventListener("click", closeOnBlur);
+      let smileyMatches = matchSmileys(smileyShortcut).splice(-8);
 
-    if (autoSmileyElt.children.length > 0 && selected >= 0) {
+      if (!smileyMatches) {
+        return;
+      }
+
+      for (let smileyMatch of smileyMatches) {
+        add(smileyMatch);
+      }
+
+      if (selected < 0 && smileyMatches.length > 0) {
+        selected = 0;
+      }
+
+      // Autocomplete with the selected smiley
+      dom.onclick = () => {
+        execute(caretPos - smileyShortcut.length, caretPos, input);
+      };
+
+      // Select the emoji under the pointer
+      dom.onmousemove = (e) => {
+        let emojiElt = e.target;
+        let index = -1;
+
+        Array.from(dom.children).forEach((child, i) => {
+          child.classList.remove("selected");
+          if (child === emojiElt) {
+            index = i;
+          }
+        });
+        if (index === -1) {
+          return;
+        }
+        emojiElt.classList.add("selected");
+        selected = index;
+      };
+
+      input.addEventListener("keydown", selectSmiley);
+
+      // If the user click outside of the input and the selection zone, clear it
+      document.body.addEventListener("click", closeOnBlur);
+
+      if (dom.children.length > 0 && selected >= 0) {
+        getSelected().classList.add("selected");
+      }
+      dom.classList.add("open");
+      if (dom.children.length === 0) {
+        clear();
+      }
+    }
+  }
+
+  /**
+   * Close the selection area if the user click outsie
+   */
+  function closeOnBlur(e) {
+    if (!dom.contains(e.target) && textInput !== e.target) {
+      clear(true);
+    }
+  }
+
+  /**
+   * Move in the selection area with keyboard arrows
+   */
+  function selectSmiley(e) {
+    if (isOpen()) {
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        previous();
+      } else if (e.key === "ArrowDown") {
+        e.preventDefault();
+        next();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        dom.click();
+      }
+    }
+  }
+
+  /**
+   * Get the current selected smiley
+   * @return {null|Element}
+   */
+  function getSelected() {
+    if (selected === -1 || selected >= dom.children.length) {
+      return null;
+    }
+    return dom.children[selected];
+  }
+
+  /**
+   * Clear the auto-complete system, remove listeners + empty the selection area
+   * @param resetSelected If true, the current selected smiley is reset too
+   */
+  function clear(resetSelected) {
+    console.assert(textInput !== null);
+    dom.innerText = "";
+    dom.onclick = null;
+    dom.onmousemove = null;
+    dom.classList.remove("open");
+    document.body.removeEventListener("click", closeOnBlur);
+    textInput.removeEventListener("keydown", selectSmiley);
+    if (resetSelected) {
+      selected = -1;
+    }
+  }
+
+  /**
+   * Add a smiley in the selection area
+   * @param emoji The emoji
+   * @param code The emoji short name
+   */
+  function add({ emoji, code }) {
+    dom.appendChild(elt("p", { "data-emoji": emoji }, emoji, code));
+  }
+
+  /**
+   * Select the next smiley in the selection area
+   */
+  function next() {
+    if (dom.children.length !== 0) {
+      selected = (selected + 1) % dom.children.length;
+      for (let child of dom.children) {
+        child.classList.remove("selected");
+      }
       getSelected().classList.add("selected");
     }
-    autoSmileyElt.classList.add("open");
-    if (autoSmileyElt.children.length === 0) {
-      clear();
+  }
+
+  /**
+   * Select the previous smiley on the selection area
+   */
+  function previous() {
+    if (dom.children.length !== 0) {
+      if (selected === 0) {
+        selected = dom.children.length - 1;
+      } else {
+        selected--;
+      }
+      for (let child of dom.children) {
+        child.classList.remove("selected");
+      }
+      getSelected().classList.add("selected");
     }
   }
-}
 
-/**
- * Close the selection area if the user click outsie
- */
-function closeOnBlur(e) {
-  if (!autoSmileyElt.contains(e.target) && textInput !== e.target) {
-    clear(true);
+  /**
+   * Check if the selection area is opened
+   * @return {boolean}
+   */
+  function isOpen() {
+    return dom.classList.contains("open");
   }
-}
 
-/**
- * Move in the selection area with keyboard arrows
- */
-function selectSmiley(e) {
-  if (isOpen()) {
-    if (e.key === "ArrowUp") {
-      e.preventDefault();
-      previous();
-    } else if (e.key === "ArrowDown") {
-      e.preventDefault();
-      next();
-    } else if (e.key === "Enter") {
-      e.preventDefault();
-      autoSmileyElt.click();
-    }
+  /**
+   * Replace the shortname by the emoji
+   * @param begin Index where the shortname ( :smile: ) begin
+   * @param end Index where the shortname finish
+   */
+  function execute(begin, end) {
+    let emoji = getSelected().dataset.emoji;
+
+    let before = textInput.value.substring(0, begin);
+    let after = textInput.value.substring(end);
+
+    textInput.value = before + emoji + after;
+    textInput.focus();
+    textInput.setSelectionRange(before.length + emoji.length + 1, before.length + emoji.length + 1);
+    clear();
   }
-}
 
-/**
- * Get the current selected smiley
- * @return {null|Element}
- */
-function getSelected() {
-  if (selected === -1 || selected >= autoSmileyElt.children.length) {
-    return null;
-  }
-  return autoSmileyElt.children[selected];
-}
-
-/**
- * Clear the auto-complete system, remove listeners + empty the selection area
- * @param resetSelected If true, the current selected smiley is reset too
- */
-function clear(resetSelected) {
-  console.assert(textInput !== null);
-  autoSmileyElt.innerText = "";
-  autoSmileyElt.onclick = null;
-  autoSmileyElt.onmousemove = null;
-  autoSmileyElt.classList.remove("open");
-  document.body.removeEventListener("click", closeOnBlur);
-  textInput.removeEventListener("keydown", selectSmiley);
-  if (resetSelected) {
-    selected = -1;
-  }
-}
-
-/**
- * Add a smiley in the selection area
- * @param emoji The emoji
- * @param code The emoji short name
- */
-function add({ emoji, code }) {
-  autoSmileyElt.appendChild(elt("p", { "data-emoji": emoji }, emoji, code));
-}
-
-/**
- * Select the next smiley in the selection area
- */
-function next() {
-  if (autoSmileyElt.children.length !== 0) {
-    selected = (selected + 1) % autoSmileyElt.children.length;
-    for (let child of autoSmileyElt.children) {
-      child.classList.remove("selected");
-    }
-    getSelected().classList.add("selected");
-  }
-}
-
-/**
- * Select the previous smiley on the selection area
- */
-function previous() {
-  if (autoSmileyElt.children.length !== 0) {
-    if (selected === 0) {
-      selected = autoSmileyElt.children.length - 1;
-    } else {
-      selected--;
-    }
-    for (let child of autoSmileyElt.children) {
-      child.classList.remove("selected");
-    }
-    getSelected().classList.add("selected");
-  }
-}
-
-/**
- * Check if the selection area is opened
- * @return {boolean}
- */
-function isOpen() {
-  return autoSmileyElt.classList.contains("open");
-}
-
-/**
- * Replace the shortname by the emoji
- * @param begin Index where the shortname ( :smile: ) begin
- * @param end Index where the shortname finish
- */
-function execute(begin, end) {
-  let emoji = getSelected().dataset.emoji;
-
-  let before = textInput.value.substring(0, begin);
-  let after = textInput.value.substring(end);
-
-  textInput.value = before + emoji + after;
-  textInput.focus();
-  textInput.setSelectionRange(
-    before.length + emoji.length + 1,
-    before.length + emoji.length + 1
-  );
-  clear();
-}
+  return {
+    dom,
+    listen: autoCompleteSmileys,
+    parse: parseSmileys,
+    isOpen: isOpen,
+  };
+})();

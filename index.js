@@ -4,9 +4,9 @@ import dotenv from "dotenv";
 import path from "path";
 import socket_io from "socket.io";
 
-import { supprimer, ajouter, scoresJSON, defier } from "./games/chifoumi.js";
 import * as Punto from "./games/punto.js";
 
+// Set up the server
 dotenv.config();
 const __dirname = path.resolve();
 
@@ -20,11 +20,9 @@ const server = app.listen(port, function () {
 // Listen web sockets
 const io = socket_io.listen(server);
 
-const { log, assert, table, error } = console;
-
 // Serve the public directory
 app.use(express.static("public"));
-app.get("/", function (req, res) {
+app.get("/", function (_, res) {
   res.sendFile(__dirname + "/public/chat.html");
 });
 
@@ -33,44 +31,47 @@ io.set("origins", "*:*");
 
 const clients = {}; // { id -> socket, ... }
 
+// ********************************************************
+//                        SOCKETS
+// ********************************************************
+
 io.on("connection", function (socket) {
   console.log("Un client s'est connecté");
   let currentID = null;
 
   socket.on("login", function (id) {
-    // si le pseudo est déjà utilisé, on lui envoie l'erreur
+    // send error if the pseudo is already used
     if (clients[id]) {
       socket.emit("erreur-connexion", "Le pseudo est déjà pris.");
       return;
     }
-    // sinon on récupère son ID
-    debugger;
-    currentID = id;
-    ajouter(id);
-    // initialisation
-    clients[currentID] = socket;
-    // log
-    console.log("Nouvel utilisateur : " + currentID);
-    // envoi d'un message de bienvenue à ce client
 
+    // set the user ID & socket
+    currentID = id;
+    clients[currentID] = socket;
+    console.log("Nouvel utilisateur : " + currentID);
     socket.emit("bienvenue", formatList());
-    // envoi aux autres clients
+
+    // notify other users
     socket.broadcast.emit("message", {
       from: null,
       to: null,
       text: currentID + " a rejoint la discussion",
       date: Date.now(),
     });
-    // envoi de la nouvelle liste à tous les clients connectés
+    // Send the new list
     socket.broadcast.emit("liste", formatList());
   });
 
   socket.on("message", function (msg) {
-    console.log("Reçu message : " + currentID);
-    // si message privé, envoi seulement au destinataire
+    if (!currentID) {
+      return;
+    }
+    console.log("Received message : " + currentID);
+
     if (msg.to != null) {
       if (clients[msg.to] !== undefined) {
-        console.log(" --> message privé");
+        console.log(" --> private message");
         clients[msg.to].emit("message", {
           from: currentID,
           to: msg.to,
@@ -93,9 +94,7 @@ io.on("connection", function (socket) {
           date: Date.now(),
         });
       }
-    }
-    // sinon, envoi à tous les gens connectés
-    else {
+    } else {
       console.log(" --> broadcast");
       io.sockets.emit("message", {
         from: currentID,
@@ -111,10 +110,9 @@ io.on("connection", function (socket) {
   socket.on("disconnect", leave);
 
   function leave() {
-    console.log(currentID + " a quitté");
-    // si client était identifié
+    console.log(currentID + " left the app");
     if (currentID) {
-      // envoi de l'information de déconnexion
+      // notify other users
       socket.broadcast.emit("message", {
         from: null,
         to: null,
@@ -122,119 +120,69 @@ io.on("connection", function (socket) {
         date: Date.now(),
       });
 
+      // Have the AI ​​play for this player in all games where he is the current player
       JSON.parse(Punto.getGames(currentID)).forEach((g) => {
-        console.log("game" + g);
         let data = JSON.parse(Punto.gameData(g));
         if (data.status === "running" && data.currentPlayer === currentID) {
           playAutoPunto(currentID, g);
         }
       });
 
-      // suppression de l'entrée
+      // delete user id & socket
       remove(currentID);
-
-      // désinscription du client
       currentID = null;
-      // envoi de la nouvelle liste pour mise à jour
+
+      // Send the updated list
       socket.broadcast.emit("liste", formatList());
     }
   }
 
-  socket.on("chifoumi", function ({ to, element }) {
-    let res = defier(currentID, to, element);
-    switch (res.status) {
-      case 1:
-        clients[to].emit("chifoumi", {
-          from: null,
-          to,
-          text: `${currentID} to défie`,
-          date: Date.now(),
-        });
-      case -1:
-      case -2:
-        socket.emit("chifoumi", {
-          from: 0,
-          to: currentID,
-          text: res.message,
-          date: Date.now(),
-        });
-        break;
-      case 0:
-        if (res.resultat.vainqueur == null) {
-          socket.emit("chifoumi", {
-            from: 0,
-            to: currentID,
-            text: res.resultat.message + " :no_mouth:",
-            date: Date.now(),
-          });
-          clients[to].emit("chifoumi", {
-            from: 0,
-            to: to,
-            text: res.resultat.message,
-            date: Date.now(),
-          });
-        } else {
-          clients[res.resultat.vainqueur].emit("chifoumi", {
-            from: 0,
-            to: res.resultat.vainqueur,
-            text: res.resultat.message + " - c'est gagné :grin:",
-            date: Date.now(),
-          });
-          clients[res.resultat.perdant].emit("chifoumi", {
-            from: 0,
-            to: res.resultat.perdant,
-            text: res.resultat.message + " - c'est perdu :frowning_face:",
-            date: Date.now(),
-          });
-          io.sockets.emit("liste", formatList());
-        }
-        break;
-    }
-  });
-
   socket.on("punto", function (req) {
+    if (!currentID) {
+      return;
+    }
     if (!req || !req.action) {
       socket.emit("punto", { req, status: -1, content: "Server error" });
     }
     switch (req.action) {
       case "create": {
-        createGamePunto(req);
+        createGamePunto(req, socket, currentID);
         break;
       }
       case "invite": {
-        invitePlayerPunto(req);
+        invitePlayerPunto(req, socket);
         break;
       }
       case "join": {
-        joinGamePunto(req);
+        joinGamePunto(req, socket);
         break;
       }
       case "launch": {
-        launchGamePunto(req);
+        launchGamePunto(req, socket);
         break;
       }
       case "play": {
-        playGamePunto(req);
+        playGamePunto(req, socket);
         break;
       }
       case "data": {
-        gameDataPunto(req);
+        gameDataPunto(req, socket);
         break;
       }
       case "card": {
-        getCardPunto(req);
+        getCardPunto(req, socket);
         break;
       }
       case "remove": {
-        removePlayerPunto(req);
+        removePlayerPunto(req, socket);
         break;
       }
       case "next": {
-        nextRoundPunto(req);
+        nextRoundPunto(req, socket);
         break;
       }
       case "winner": {
-        getWinner(req);
+        getWinnerPunto(req, currentID);
         break;
       }
       default: {
@@ -242,467 +190,575 @@ io.on("connection", function (socket) {
       }
     }
   });
+});
 
-  function removePlayerPunto(req) {
-    let game = Number(req.game);
-    let player = req.player;
-    if (!game || !player) {
-      console.log(`Impossible de supprimer '${player}' de la partie ${game} !`);
-      socket.emit("punto", { req, status: -1, content: "Undefined arguments" });
-      return;
-    }
+// ********************************************************
+//                        FUNCTIONS
+// ********************************************************
 
-    let gameDataBefore = JSON.parse(Punto.gameData(game));
+/**
+ * Remove a player from a punto game
+ * @param {
+ *  { action : string,
+ *    game : number,
+ *    player : string
+ *  }
+ *  } req The socket request
+ */
+function removePlayerPunto(req) {
+  let game = Number(req.game);
+  let player = req.player;
+  if (!game || !player) {
+    socket.emit("punto", { req, status: -1, content: "Undefined arguments" });
+    return;
+  }
 
-    if (
-      gameDataBefore.status === "running" &&
-      gameDataBefore.currentPlayer === req.player
-    ) {
-      playAutoPunto(req.player, game);
-    }
+  let gameDataBefore = JSON.parse(Punto.gameData(game));
+  // check if this game exists
+  if (gameDataBefore === -1) {
+    clients[player].emit("punto", { req, status: 0 });
+    return;
+  }
 
-    Punto.removePlayer(player, game);
+  // If the removed player is the current player -> AI
+  if (gameDataBefore.status === "running" && gameDataBefore.currentPlayer === req.player) {
+    playAutoPunto(req.player, game);
+  }
 
-    let gameData = Punto.gameData(game);
+  // Remove the player
+  Punto.removePlayer(player, game);
 
-    if (gameData === -1) {
-      for (let p in gameDataBefore.players) {
-        if (gameDataBefore.players[p].status === "pending") {
-          clients[p].emit("punto", { req, status: 1 });
-        }
+  // Get game data after deletion
+  let gameData = Punto.gameData(game);
+
+  // If the game doesn't exist anymore (i.e the removed player was the last ready player )
+  if (gameData === -1) {
+    // Notify all potentially pending players that this game no longer exists
+    for (let p in gameDataBefore.players) {
+      if (clients[p] && gameDataBefore.players[p].status === "pending") {
+        clients[p].emit("punto", { req, status: 1 });
       }
-    } else {
-      for (let p in JSON.parse(gameData).players) {
+    }
+  } else {
+    // Notify other players of this game that the player was removed
+    for (let p in JSON.parse(gameData).players) {
+      if (clients[p]) {
         clients[p].emit("punto", {
           req,
           status: 0,
         });
       }
     }
+  }
 
+  // Notify the removed player
+  if (clients[player]) {
     clients[player].emit("punto", { req, status: 0 });
   }
+}
 
-  function createGamePunto(req) {
-    let id = Punto.createGame(currentID);
+/**
+ * Create a new punto game
+ * @param {{action : string}} req The socket request
+ * @param {string} currentID The creator pseudo
+ */
+function createGamePunto(req, socket, currentID) {
+  let id = Punto.createGame(currentID);
 
-    socket.emit("punto", { req, status: 0, game: id });
+  // Notify the player that the game was created and send its ID
+  socket.emit("punto", { req, status: 0, game: id });
+}
+
+/**
+ * Invite a player in a punto game
+ * @param {{action : string, game : id, player : string}} req The socket request
+ */
+function invitePlayerPunto(req, socket) {
+  let game = Number(req.game);
+  let player = req.player;
+  if (!game || !player) {
+    socket.emit("punto", { req, status: -1, content: "Undefined arguments" });
+    return;
   }
 
-  function invitePlayerPunto(req) {
-    let game = Number(req.game);
-    let player = req.player;
-    if (!game || !player) {
-      console.log(
-        `Impossible d'inviter ${req.player} dans la partie ${game} : argument undefined`
-      );
-      socket.emit("punto", { req, status: -1, content: "Server error" });
-      return;
-    }
+  // Check that the player exists
+  if (!clients[player]) {
+    socket.emit("punto", { req, status: -4, content: "Joueur inconnu" });
+    return;
+  }
 
-    let res = Punto.invitePlayer(game, player);
+  // Invite the player
+  let res = Punto.invitePlayer(game, player);
 
-    if (res !== 0) {
-      let content;
-      switch (res) {
-        case -1: {
-          content = "Cette partie n'existe pas";
-          break;
-        }
-        case -2: {
-          content = "Vous ne pouvez plus inviter de joueur : 4 joueurs maximum";
-          break;
-        }
-        case -3: {
-          content =
-            "Vous ne pouvez plus inviter de joueur une fois la partie lancée";
-          break;
-        }
-        default: {
-          content = "server error";
-        }
+  if (res !== 0) {
+    // Notify the player that an error has occured
+    let content;
+    switch (res) {
+      case -1: {
+        content = "Cette partie n'existe pas";
+        break;
       }
-
-      socket.emit("punto", { req, status: res, content });
-      return;
-    }
-
-    let gameData = JSON.parse(Punto.gameData(game));
-
-    for (let p in gameData.players) {
-      if (gameData.players[p].status === "ready") {
-        clients[p].emit("punto", { req, status: 0, gameData });
+      case -2: {
+        content = "Vous ne pouvez plus inviter de joueur : 4 joueurs maximum";
+        break;
+      }
+      case -3: {
+        content = "Vous ne pouvez plus inviter de joueur une fois la partie lancée";
+        break;
+      }
+      default: {
+        content = "server error";
       }
     }
 
+    socket.emit("punto", { req, status: res, content });
+    return;
+  }
+
+  let gameData = JSON.parse(Punto.gameData(game));
+
+  // Notify all players in this game that the player was invited
+  for (let p in gameData.players) {
+    if (clients[p] && gameData.players[p].status === "ready") {
+      clients[p].emit("punto", { req, status: 0, gameData });
+    }
+  }
+
+  // Notify the invited player
+  if (clients[player]) {
     clients[player].emit("punto", { req, status: 0 });
   }
+}
 
-  function joinGamePunto(req) {
-    let game = Number(req.game);
-    let player = req.player;
-    if (!game || !player) {
-      console.log(
-        `Impossible pour ${player} de joindre la partie ${game} : argument undefined`
-      );
-      socket.emit("punto", { req, status: -1, content: "Server error" });
-      return;
-    }
+/**
+ * Join a punto game
+ * @param {{action : string, game : id, player : string}} req
+ */
+function joinGamePunto(req, socket) {
+  let game = Number(req.game);
+  let player = req.player;
+  if (!game || !player) {
+    socket.emit("punto", { req, status: -1, content: "Undefined arguments" });
+    return;
+  }
 
-    let res = Punto.joinGame(game, player);
-    if (res !== 0) {
-      let content;
-      switch (res) {
-        case -1: {
-          content = "Cette partie n'existe pas";
-          break;
-        }
-        case -2: {
-          content = "Vous n'êtes pas inviter à cette partie";
-          break;
-        }
-        case -3: {
-          content = "Vous ne pouvez pas rejoindre une partie une fois lancée";
-          break;
-        }
-        default: {
-          content = "server error";
-        }
+  // Check that the player exists
+  if (!clients[player]) {
+    socket.emit("punto", { req, status: -4, content: "Joueur inconnu" });
+    return;
+  }
+
+  let res = Punto.joinGame(game, player);
+  if (res !== 0) {
+    // Notify the player that an error has occured
+    let content;
+    switch (res) {
+      case -1: {
+        content = "Cette partie n'existe pas";
+        break;
       }
-
-      socket.emit("punto", { req, status: res, content });
-      return;
+      case -2: {
+        content = "Vous n'êtes pas inviter à cette partie";
+        break;
+      }
+      case -3: {
+        content = "Vous ne pouvez pas rejoindre une partie une fois lancée";
+        break;
+      }
+      default: {
+        content = "server error";
+      }
     }
 
-    let players = JSON.parse(Punto.gameData(game)).players;
-    // console.log(players);
-    for (let p in players) {
+    socket.emit("punto", { req, status: res, content });
+    return;
+  }
+
+  let players = JSON.parse(Punto.gameData(game)).players;
+
+  // Notify all players in this game that the player joined
+  for (let p in players) {
+    if (clients[p]) {
       clients[p].emit("punto", { req, status: 0 });
     }
   }
+}
 
-  function launchGamePunto(req) {
-    let game = Number(req.game);
-    if (!game) {
-      console.log(`[launchGamePunto] : game id undefined`);
-      socket.emit("punto", { req, status: -1, content: "Server error" });
-      return;
-    }
-
-    let dataBefore = JSON.parse(Punto.gameData(game));
-    let playersBeforeLaunch = [];
-    if (dataBefore) {
-      playersBeforeLaunch = Object.keys(dataBefore.players);
-    }
-
-    let res = Punto.launchGame(game);
-    if (res !== 0) {
-      let content;
-      switch (res) {
-        case -1: {
-          content = "Cette partie n'existe pas";
-          break;
-        }
-        case -2: {
-          content =
-            "Trop peu de joueur sont prêt pour lancer cette partie : 2 minimum";
-          break;
-        }
-        default: {
-          content = "Server error";
-        }
-      }
-
-      socket.emit("punto", { req, status: res, content });
-      return;
-    }
-
-    let playersAfterLaunch = Object.keys(
-      JSON.parse(Punto.gameData(game)).players
-    );
-
-    // console.table(playersBeforeLaunch);
-    // console.table(playersAfterLaunch);
-
-    for (let p of playersBeforeLaunch) {
-      if (playersAfterLaunch.includes(p)) {
-        clients[p].emit("punto", { req, status: 0 });
-      } else {
-        clients[p].emit("punto", {
-          req: { action: "remove", game, player: p },
-          status: 0,
-        });
-      }
-    }
+/**
+ * Launch a punto game
+ * @param {{action : string, game : id}} req
+ */
+function launchGamePunto(req, socket) {
+  let game = Number(req.game);
+  if (!game) {
+    socket.emit("punto", { req, status: -1, content: "undefined arguments" });
+    return;
   }
 
-  function playGamePunto(req) {
-    let game = Number(req.game);
-    let index = Number(req.index);
-    let player = req.player;
+  // Get the players before the game launch (in order to keep track of pending players who will be removed during launch)
+  let dataBefore = JSON.parse(Punto.gameData(game));
+  let playersBeforeLaunch = [];
+  if (dataBefore) {
+    playersBeforeLaunch = Object.keys(dataBefore.players);
+  }
 
-    if (!game || !player || !Number.isInteger(index)) {
-      console.log(`[playGamePunto] : arguments undefined`);
-      socket.emit("punto", { req, status: -1, content: "Server error" });
-      return;
+  // Launch the game
+  let res = Punto.launchGame(game);
+  if (res !== 0) {
+    // Notify the player that an error has occured
+    let content;
+    switch (res) {
+      case -1: {
+        content = "Cette partie n'existe pas";
+        break;
+      }
+      case -2: {
+        content = "Trop peu de joueur sont prêt pour lancer cette partie : 2 minimum";
+        break;
+      }
+      default: {
+        content = "Server error";
+      }
     }
 
-    let res = Punto.play(game, player, index);
+    socket.emit("punto", { req, status: res, content });
+    return;
+  }
 
-    if (res < 0) {
-      let content;
-      switch (res) {
-        case -1: {
-          content = "Cette partie n'existe pas";
-          break;
-        }
-        case -2: {
-          content = "Ce joueur ne participe pas à cette partie";
-          break;
-        }
-        case -3: {
-          content = "Cette carte ne peut pas être posé ici";
-          break;
-        }
-        case -4: {
-          content = "Vous devez attendre votre tour pour jouer";
-          break;
-        }
-        case -5: {
-          content = "La partie n'est pas en cours de jeu";
-          break;
-        }
-      }
+  // Get the players still playing after the game launch
+  let playersAfterLaunch = Object.keys(JSON.parse(Punto.gameData(game)).players);
 
-      socket.emit("punto", { req, status: res, content });
-      return;
+  for (let p of playersBeforeLaunch) {
+    if (!clients[p]) {
+      continue;
     }
-
-    let finished = typeof res === "object";
-
-    let data = JSON.parse(Punto.gameData(req.game));
-    let card = data.board[req.index];
-    for (let p in data.players) {
-      if (data.players[p].status === "left") {
-        continue;
-      }
+    if (playersAfterLaunch.includes(p)) {
+      // Notify ready players that the game was launched
+      clients[p].emit("punto", { req, status: 0 });
+    } else {
+      // Notify pending players that they are removed from the game
       clients[p].emit("punto", {
-        req,
-        status: finished ? 1 : 0,
-        card,
-        next: finished ? null : data.currentPlayer,
-        winner: finished ? res.winner : null,
+        req: { action: "remove", game, player: p },
+        status: 0,
       });
     }
+  }
+}
 
-    if (!finished && data.players[data.currentPlayer].status === "left") {
-      playAutoPunto(data.currentPlayer, game);
-    }
+/**
+ * Play to a punto game
+ * @param {{action : string, game : number, player : string, index : number}} req
+ */
+function playGamePunto(req, socket) {
+  let game = Number(req.game);
+  let index = Number(req.index);
+  let player = req.player;
+
+  if (!game || !player || !Number.isInteger(index)) {
+    socket.emit("punto", { req, status: -1, content: "Undefined arguments" });
+    return;
   }
 
-  function gameDataPunto(req) {
-    let game = Number(req.game);
-    if (!game) {
-      console.log(
-        `Impossible d'obtenir les infos de la partie ${game} : argument undefined`
-      );
-      socket.emit("punto", { req, status: -1, content: "Server error" });
-      return;
-    }
+  let res = Punto.play(game, player, index);
 
-    let res = Punto.gameData(game);
-    if (typeof res !== "string") {
-      let content;
-      switch (res) {
-        case -1: {
-          content = "Cette partie n'existe pas";
-          break;
-        }
-
-        default: {
-          content = "server error";
-          break;
-        }
+  if (res < 0) {
+    let content;
+    // Notify the player that an error has occured
+    switch (res) {
+      case -1: {
+        content = "Cette partie n'existe pas";
+        break;
       }
-
-      socket.emit("punto", { req, status: res, content });
-
-      return;
-    }
-
-    socket.emit("punto", { req, status: 0, content: res });
-  }
-
-  function getCardPunto(req) {
-    let game = Number(req.game);
-    let player = req.player;
-    if (!game || !player) {
-      console.log(
-        `Impossible pour ${req.player} de joindre la partie ${game} : argument undefined`
-      );
-      socket.emit("punto", { req, status: -1, content: "Server error" });
-      return;
-    }
-
-    let res = Punto.getCard(game, player);
-    if (typeof res !== "string") {
-      let content;
-      switch (res) {
-        case -1: {
-          content = "Cette partie n'existe pas";
-          break;
-        }
-        case -2: {
-          content = "Ce joueur ne participe pas à cette partie";
-          break;
-        }
-        case -3: {
-          content = "Impossible de voir sa carte avant son tour";
-          break;
-        }
-        default: {
-          content = "server error";
-          break;
-        }
+      case -2: {
+        content = "Ce joueur ne participe pas à cette partie";
+        break;
       }
-
-      socket.emit("punto", { req, status: res, content });
-
-      return;
-    }
-
-    socket.emit("punto", { req, status: 0, content: res });
-  }
-
-  function nextRoundPunto(req) {
-    let game = Number(req.game);
-    if (!game) {
-      console.log(`[nextRoundPunto] : game id undefined`);
-      socket.emit("punto", { req, status: -1, content: "Server error" });
-      return;
-    }
-
-    let res = Punto.nextRound(game);
-    if (res < 0) {
-      let content;
-      switch (res) {
-        case -1: {
-          content = "Cette partie n'existe pas";
-          break;
-        }
-        case -2: {
-          content = "Ce n'est pas le moment de passer au tour suivant";
-          break;
-        }
-        default: {
-          content = "server error";
-          break;
-        }
+      case -3: {
+        content = "Cette carte ne peut pas être posé ici";
+        break;
       }
-      socket.emit("punto", { req, status: res, content });
-      return;
-    }
-
-    let data = JSON.parse(Punto.gameData(req.game));
-    for (let p in data.players) {
-      if (data.players[p].status === "ready") {
-        clients[p].emit("punto", { req, status: res });
+      case -4: {
+        content = "Vous devez attendre votre tour pour jouer";
+        break;
       }
-    }
-  }
-
-  function getWinner(req) {
-    let game = Number(req.game);
-    if (!game) {
-      console.log(`[getWinner] : game id undefined`);
-      socket.emit("punto", { req, status: -1, content: "Server error" });
-      return;
-    }
-
-    let players = JSON.parse(Punto.gameData(game)).players;
-
-    let res = Punto.gameResult(game);
-    if (typeof res === "number") {
-      let content;
-      switch (res) {
-        case -1: {
-          content = "Cette partie n'existe pas";
-          break;
-        }
-        case -2: {
-          content = "La partie n'est pas terminée";
-          break;
-        }
-        default: {
-          content = "server error";
-          break;
-        }
-      }
-      socket.emit("punto", { req, status: res, content });
-      return;
-    }
-
-    for (let p in players) {
-      clients[p].emit("punto", { req, status: 0, winner: res.winner });
-    }
-  }
-
-  function playAutoPunto(player, game) {
-    let boardBefore = JSON.parse(Punto.gameData(game)).board;
-    let res = Punto.play(game, player, -1);
-    let data = JSON.parse(Punto.gameData(game));
-    let boardAfter = data.board;
-
-    let index = null;
-    for (let i of Array(36).keys()) {
-      if (boardAfter[i] === null) {
-        continue;
-      }
-
-      if (
-        (boardBefore[i] === null && boardAfter[i] !== null) ||
-        boardAfter[i].color !== boardBefore[i].color ||
-        boardAfter[i].value !== boardBefore[i].value
-      ) {
-        index = i;
+      case -5: {
+        content = "La partie n'est pas en cours de jeu";
         break;
       }
     }
-    console.assert(index !== null);
-    let finished = typeof res === "object";
 
-    let card = boardAfter[index];
-    for (let p in data.players) {
-      if (data.players[p].status === "left") {
-        continue;
+    socket.emit("punto", { req, status: res, content });
+    return;
+  }
+
+  let finished = typeof res === "object";
+
+  let data = JSON.parse(Punto.gameData(req.game));
+  let card = data.board[req.index];
+  for (let p in data.players) {
+    if (!clients[p] || data.players[p].status === "left") {
+      continue;
+    }
+    // Send the game status after this turn to all players
+    clients[p].emit("punto", {
+      req,
+      status: finished ? 1 : 0,
+      card,
+      next: finished ? null : data.currentPlayer,
+      winner: finished ? res.winner : null,
+    });
+  }
+
+  // If the next player is left -> AI
+  if (!finished && data.players[data.currentPlayer].status === "left") {
+    playAutoPunto(data.currentPlayer, game);
+  }
+}
+
+/**
+ * Get data from a punto game
+ * @param {action : string, game : number} req
+ */
+function gameDataPunto(req, socket) {
+  let game = Number(req.game);
+  if (!game) {
+    socket.emit("punto", { req, status: -1, content: "Undefined arguments" });
+    return;
+  }
+
+  let res = Punto.gameData(game);
+  if (typeof res !== "string") {
+    let content;
+    // Notify the player that an error has occured
+    switch (res) {
+      case -1: {
+        content = "Cette partie n'existe pas";
+        break;
       }
-      clients[p].emit("punto", {
-        req: {
-          action: "play",
-          index,
-          player,
-          game,
-        },
-        status: finished ? 1 : 0,
-        card,
-        next: finished ? null : data.currentPlayer,
-      });
+      default: {
+        content = "server error";
+        break;
+      }
+    }
+    socket.emit("punto", { req, status: res, content });
+    return;
+  }
+
+  // Send the data to the player
+  socket.emit("punto", { req, status: 0, content: res });
+}
+
+/**
+ * Get the card of the current player
+ * @param {{action : string, game : number, player : string}} req
+ */
+function getCardPunto(req, socket) {
+  let game = Number(req.game);
+  let player = req.player;
+  if (!game || !player) {
+    socket.emit("punto", { req, status: -1, content: "Undefined arguments" });
+    return;
+  }
+
+  let res = Punto.getCard(game, player);
+  if (typeof res !== "string") {
+    let content;
+    // Notify the player that an error has occured
+    switch (res) {
+      case -1: {
+        content = "Cette partie n'existe pas";
+        break;
+      }
+      case -2: {
+        content = "Ce joueur ne participe pas à cette partie";
+        break;
+      }
+      case -3: {
+        content = "Impossible de voir sa carte avant son tour";
+        break;
+      }
+      default: {
+        content = "server error";
+        break;
+      }
     }
 
-    if (data.players[data.currentPlayer].status === "left") {
-      playAutoPunto(data.currentPlayer, game);
+    // Send the card to the player
+    socket.emit("punto", { req, status: res, content });
+    return;
+  }
+
+  socket.emit("punto", { req, status: 0, content: res });
+}
+
+/**
+ * Launch the next round of a punto game
+ * @param {{action : string, game : number}} req
+ */
+function nextRoundPunto(req, socket) {
+  let game = Number(req.game);
+  if (!game) {
+    socket.emit("punto", { req, status: -1, content: "Undefined arguments" });
+    return;
+  }
+
+  let res = Punto.nextRound(game);
+  if (res < 0) {
+    let content;
+    // Notify the player that an error has occured
+    switch (res) {
+      case -1: {
+        content = "Cette partie n'existe pas";
+        break;
+      }
+      case -2: {
+        content = "Ce n'est pas le moment de passer au tour suivant";
+        break;
+      }
+      default: {
+        content = "server error";
+        break;
+      }
+    }
+    socket.emit("punto", { req, status: res, content });
+    return;
+  }
+
+  let data = JSON.parse(Punto.gameData(req.game));
+  for (let p in data.players) {
+    // Notify all players that the next round was launched
+    if (clients[p] && data.players[p].status === "ready") {
+      clients[p].emit("punto", { req, status: res });
     }
   }
-});
+}
 
-// ***** FUNCTIONS *****
+/**
+ * Get the final winner of a punto game
+ * @param {{action : string, game : number}} req
+ */
+function getWinnerPunto(req, socket) {
+  let game = Number(req.game);
+  if (!game) {
+    socket.emit("punto", { req, status: -1, content: "Undefined arguments" });
+    return;
+  }
 
+  let data = JSON.parse(Punto.gameData(game));
+  if (data === -1) {
+    socket.emit("punto", { req, status: -1, content: "Cette partie n'existe pas" });
+    return;
+  }
+  // Get the players of the game
+  let players = data.players;
+
+  let res = Punto.gameResult(game);
+  if (typeof res === "number") {
+    let content;
+    // Notify the player that an error has occured
+    switch (res) {
+      case -1: {
+        content = "Cette partie n'existe pas";
+        break;
+      }
+      case -2: {
+        content = "La partie n'est pas terminée";
+        break;
+      }
+      default: {
+        content = "server error";
+        break;
+      }
+    }
+    socket.emit("punto", { req, status: res, content });
+    return;
+  }
+
+  // Send the winner to all players
+  for (let p in players) {
+    if (clients[p] && data.players[p].status === "ready") {
+      clients[p].emit("punto", { req, status: 0, winner: res.winner });
+    }
+  }
+}
+
+/**
+ * Have the player play automatically by an AI
+ * @param {string} player
+ * @param {number} game
+ */
+function playAutoPunto(player, game) {
+  // Keep the board before playin
+  let dataBefore = JSON.parse(Punto.gameData(game));
+  if (dataBefore === -1) {
+    return;
+  }
+  let boardBefore = dataBefore.board;
+
+  // Play automaticcaly
+  let res = Punto.play(game, player, -1);
+
+  // Get the board after playing
+  let data = JSON.parse(Punto.gameData(game));
+  let boardAfter = data.board;
+
+  // Find the index and the card that the AI  played
+  let index = null;
+  for (let i of Array(36).keys()) {
+    if (boardAfter[i] === null) {
+      continue;
+    }
+
+    if (
+      (boardBefore[i] === null && boardAfter[i] !== null) ||
+      boardAfter[i].color !== boardBefore[i].color ||
+      boardAfter[i].value !== boardBefore[i].value
+    ) {
+      index = i;
+      break;
+    }
+  }
+
+  let finished = typeof res === "object";
+
+  let card = boardAfter[index];
+  for (let p in data.players) {
+    if (!clients[p] || data.players[p].status === "left") {
+      continue;
+    }
+    // Send the game status after this turn to all players
+    clients[p].emit("punto", {
+      req: {
+        action: "play",
+        index,
+        player,
+        game,
+      },
+      status: finished ? 1 : 0,
+      card,
+      next: finished ? null : data.currentPlayer,
+      winner: finished ? res.winner : null,
+    });
+  }
+
+  // If the next players is left -> AI
+  if (data.players[data.currentPlayer].status === "left") {
+    playAutoPunto(data.currentPlayer, game);
+  }
+}
+
+/**
+ * Remove a user
+ * @param {string} id
+ */
 function remove(id) {
   delete clients[id];
-  supprimer(id);
   Punto.removePlayer(id);
 }
 
+/**
+ * Format the list to send to clients
+ */
 function formatList() {
   return JSON.stringify(Object.keys(clients));
 }

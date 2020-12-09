@@ -2,17 +2,7 @@
 
 const { log, assert, error, table } = console;
 
-const number = [
-  "one",
-  "two",
-  "three",
-  "four",
-  "five",
-  "six",
-  "seven",
-  "eight",
-  "nine",
-];
+const number = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
 
 const speaker = window.speechSynthesis;
 function speak(text) {
@@ -29,9 +19,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   // DOM Elements
   let content = document.getElementById("content");
-
   let pseudoInput = document.getElementById("pseudo");
-
   let asideClients = document.querySelector("#users");
   let btnConnect = document.getElementById("btnConnecter");
   let btnLogout = document.getElementById("btnQuitter");
@@ -52,7 +40,10 @@ document.addEventListener("DOMContentLoaded", function () {
   document.body.classList.remove("connected");
   pseudoInput.focus();
 
-  // Commands history system
+  // *************************************************
+  //                HISTORY SYSTEM
+  // *************************************************
+
   let history = {
     commands: [],
     index: -1,
@@ -70,20 +61,9 @@ document.addEventListener("DOMContentLoaded", function () {
     },
   };
 
-  // Chifoumi autocomplete system
-  let autoCompleteChifoumi = {
-    elements: ["rock", "paper", "scissors", "spock", "lizard"],
-    index: 0,
-    next: () => {
-      let res = autoCompleteChifoumi.elements[autoCompleteChifoumi.index];
-      autoCompleteChifoumi.index =
-        (autoCompleteChifoumi.index + 1) % autoCompleteChifoumi.elements.length;
-      return res;
-    },
-  };
-
-  // Chifoumi command shortcut
-  //asideClients.ondblclick = chifoumiCommandShortcut;
+  // *************************************************
+  //                EVENT LISTENERS
+  // *************************************************
 
   messageInput.onfocus = () => {
     messageWrapper.classList.add("focus");
@@ -91,22 +71,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   messageInput.onblur = () => {
     messageWrapper.classList.remove("focus");
-  };
-
-  btnQuitGame.onclick = quitGame;
-
-  function quitGame() {
-    let gameTab = document.querySelector(
-      "#punto input[name='punto-frame']:checked + .game"
-    );
-    if (gameTab) {
-      let id = gameTab.dataset.gameid;
-      sock.emit("punto", { action: "remove", game: id, player: pseudo });
-    }
-  }
-
-  backHome.onclick = () => {
-    home_radio.checked = true;
   };
 
   btnConnect.onclick = connect;
@@ -122,17 +86,17 @@ document.addEventListener("DOMContentLoaded", function () {
   //   document.body.classList.remove("connected");
   // };
 
-  // Active the auto-complete smiley system at every interaction with the message input, if the content isn't a command
   for (let event of ["input", "focus", "click", "keyup"]) {
+    // Active the auto-complete smiley system at every interaction with the message input, if the content isn't a command
     messageInput.addEventListener(event, function (e) {
       if (!messageInput.value.startsWith("/")) {
-        autoCompleteSmileys(e, messageInput);
+        SmileysSystem.listen(e, messageInput);
       }
     });
   }
 
   messageInput.addEventListener("keydown", function (e) {
-    if (isOpen()) {
+    if (SmileysSystem.isOpen()) {
       return;
     }
     if (e.key === "Enter" && messageInput.value.trim().length !== 0) {
@@ -152,12 +116,6 @@ document.addEventListener("DOMContentLoaded", function () {
       } else {
         messageInput.value = "";
       }
-    } else if (e.which === 9) {
-      e.preventDefault();
-      let match = messageInput.value.match(/^\/chifoumi @[^\s]+ :/);
-      if (match) {
-        messageInput.value = `${match[0]}${autoCompleteChifoumi.next()}:`;
-      }
     }
   });
 
@@ -169,16 +127,28 @@ document.addEventListener("DOMContentLoaded", function () {
     sock.emit("punto", { action: "create" });
   };
 
-  // *****    SOCKECT     *****
+  btnQuitGame.onclick = quitGame;
+
+  backHome.onclick = () => {
+    home_radio.checked = true;
+  };
+
+  // *************************************************
+  //                      SOCKETS
+  // *************************************************
 
   sock.on("erreur-connexion", function (msg) {
+    if (connected) {
+      return;
+    }
     alert(msg);
     pseudo = null;
   });
 
   sock.on("bienvenue", function (clientsList) {
+    connected = true;
     chatMain.innerHTML = "";
-    messageWrapper.appendChild(autoSmileyElt);
+    messageWrapper.appendChild(SmileysSystem.dom);
     document.body.classList.add("connected");
     document.getElementById("radio_home").checked = true;
     document.getElementById("userPseudo").textContent = pseudo;
@@ -202,25 +172,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Personal message
     if (to === pseudo || from === pseudo) {
-      addMessage(
-        text.split(/^@\S+/)[1],
-        `${from} [privé${from === pseudo ? ` @${to}]` : "]"}`,
-        "mp",
-        date
-      );
-    }
-  });
-
-  sock.on("chifoumi", function ({ text, date, buzz: toBuzz }) {
-    addMessage(text, "[chifoumi]", "chifoumi", date);
-    if (toBuzz) {
-      buzz();
+      addMessage(text.split(/^@\S+/)[1], `${from} [privé${from === pseudo ? ` @${to}]` : "]"}`, "mp", date);
     }
   });
 
   sock.on("punto", handlePuntoEvent);
 
-  // *****    FUNCTIONS     *****
+  // *************************************************
+  //                    FUNCTIONS
+  // *************************************************
+
+  const PuntoHandler = {};
+
+  PuntoHandler.create = function () {};
 
   /**
    * Handle punto events
@@ -233,22 +197,20 @@ document.addEventListener("DOMContentLoaded", function () {
       console.error("[punto] - Invalid data received from server ");
       return;
     }
+
+    // Get the action
     let action = data.action ? data.action : data.req.action;
 
     if (data.status < 0) {
-      console.error("Non zero status !");
-      displayPopup(
-        `Attention !`,
-        `${data.content ? data.content : "Erreur server"}`,
-        "Compris !"
-      );
+      //console.error("Non zero status !");
+      displayPopup(`Attention !`, `${data.content ? data.content : "Erreur server"}`, "Compris !");
       return;
     }
 
     switch (action) {
       case "create": {
         console.assert(data.game);
-        createPuntoGame(data.game);
+        createPuntoLobby(data.game);
         speak(`Vous venez de créer une nouvelle partie !`);
         break;
       }
@@ -265,20 +227,15 @@ document.addEventListener("DOMContentLoaded", function () {
       case "data": {
         let gameData = JSON.parse(data.content);
         let status = gameData.status;
-        if (
-          status === "pending" &&
-          gameData.players[pseudo].status === "ready"
-        ) {
+        if (status === "pending" && gameData.players[pseudo].status === "ready") {
           updatePlayersList(data.req.game, gameData.players);
         } else if (status === "running") {
           // First turn ?
           if (gameData.board.some((c) => c !== null)) {
-            updateGameData(data.req.game, gameData);
+            updatePlayersStatus(data.req.game, gameData);
           } else {
             if (gameData.nthRound > 1) {
-              let board = document.querySelector(
-                `#punto .game[data-gameid="${data.req.game}"] .board`
-              );
+              let board = document.querySelector(`#punto .game[data-gameid="${data.req.game}"] .board`);
               board.classList.add("past");
               board.onclick = () => {
                 board.remove();
@@ -293,9 +250,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
               deleteGameTab(data.req.game);
               createLaunchedGame(data.req.game, gameData);
-              let gameFrame = document.querySelector(
-                `#punto .game[data-gameid="${data.req.game}"]`
-              );
+              let gameFrame = document.querySelector(`#punto .game[data-gameid="${data.req.game}"]`);
               gameFrame.appendChild(board);
 
               return;
@@ -326,7 +281,7 @@ document.addEventListener("DOMContentLoaded", function () {
       case "join": {
         if (data.req.player === pseudo) {
           deleteGameTab(data.req.game);
-          createPuntoGame(data.req.game);
+          createPuntoLobby(data.req.game);
           speak("Vous venez de rejoindre la partie");
         } else {
           speak(`${data.req.player} vient de rejoindre la partie ! `);
@@ -346,14 +301,10 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       case "play": {
         let card = document.querySelector(
-          `#punto .game.play[data-gameid="${
-            data.req.game
-          }"] > .board:not(.past) .card:nth-child(${data.req.index + 1})`
+          `#punto .game.play[data-gameid="${data.req.game}"] > .board:not(.past) .card:nth-child(${data.req.index + 1})`
         );
 
-        card.className = `card ${data.card.color} ${
-          number[data.card.value - 1]
-        }`;
+        card.className = `card ${data.card.color} ${number[data.card.value - 1]}`;
 
         if (data.req.player === pseudo) {
           updatePlayerCard(data.req.game);
@@ -393,14 +344,8 @@ document.addEventListener("DOMContentLoaded", function () {
         break;
       }
       case "winner": {
-        displayPopup(
-          `Terminé !`,
-          `${data.winner} gagne cette partie !`,
-          "Terminer !"
-        );
-        let board = document.querySelector(
-          `#punto .game[data-gameid="${data.req.game}"] .board`
-        );
+        displayPopup(`Terminé !`, `${data.winner} gagne cette partie !`, "Terminer !");
+        let board = document.querySelector(`#punto .game[data-gameid="${data.req.game}"] .board`);
         board.classList.add("past");
         board.onclick = () => {
           quitGame();
@@ -415,11 +360,27 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
+  /**
+   * Quit the game of selected frame
+   */
+  function quitGame() {
+    let gameTab = document.querySelector("#punto input[name='punto-frame']:checked + .game");
+    if (gameTab) {
+      let id = gameTab.dataset.gameid;
+      sock.emit("punto", { action: "remove", game: id, player: pseudo });
+    }
+  }
+
+  /**
+   * Update the player card in a punto game
+   * @param {number} id The game id
+   * @param {{color : string, value : number}} card The new card, if no card specified, the current card is returned
+   */
   function updatePlayerCard(id, card) {
     let cardElt = document.querySelector(
       `#punto .game.play[data-gameid="${id}"] > .player[data-pseudo="${pseudo}"] .card `
     );
-    log(cardElt, card);
+
     if (card) {
       cardElt.className = `card ${card.color} ${number[card.value - 1]}`;
     } else {
@@ -431,6 +392,7 @@ document.addEventListener("DOMContentLoaded", function () {
    * Create a new punto game tab
    * @param {number} id The game Id
    * @param {string} type The status of the game : 'launch','invite' or 'play'
+   * @return {HTMLDivElement} The game tab element
    */
   function createGameTab(id, type) {
     let div = elt("div", { class: `${type} game`, "data-gameId": id });
@@ -454,9 +416,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
   /**
    * Create a new punto game
-   * @param {*} id
+   * @param {number} id The game id
+   * @param {object[]} players The list of player in this game
    */
-  function createPuntoGame(id, players) {
+  function createPuntoLobby(id, players) {
     let div = createGameTab(id, "launch");
 
     let aside = elt("aside", {});
@@ -473,9 +436,7 @@ document.addEventListener("DOMContentLoaded", function () {
           game: id,
           player: target.textContent,
         });
-        speak(
-          `Vous venez de supprimer l'invitation pour ${target.textContent} !`
-        );
+        speak(`Vous venez de supprimer l'invitation pour ${target.textContent} !`);
       } else if (target.classList.contains("others")) {
         sock.emit("punto", {
           action: "invite",
@@ -514,6 +475,12 @@ document.addEventListener("DOMContentLoaded", function () {
     updatePlayersList(id, players);
   }
 
+  /**
+   * Create a punto card
+   * @param {string|number} type The type of the card, the value or 'none'/'back'
+   * @param {string} color The card color
+   * @returns {HTMLDivElement} The card element
+   */
   function createCard(type, color) {
     return elt(
       "div",
@@ -524,14 +491,15 @@ document.addEventListener("DOMContentLoaded", function () {
       ...Array(9)
         .fill(null)
         .map(() => elt("div", { class: "dot" })),
-      elt(
-        "p",
-        { class: "punto-logo" },
-        ..."punto".split("").map((l) => elt("span", {}, l))
-      )
+      elt("p", { class: "punto-logo" }, ..."punto".split("").map((l) => elt("span", {}, l)))
     );
   }
 
+  /**
+   * Create a launched game
+   * @param {number} id THe game id
+   * @param {object} gameData The game data
+   */
   function createLaunchedGame(id, gameData) {
     let div = createGameTab(id, "play");
 
@@ -544,10 +512,7 @@ document.addEventListener("DOMContentLoaded", function () {
           class: "player ",
           "data-pseudo": player,
           "data-color1": gameData.players[player].colors[0],
-          "data-color2":
-            Object.keys(gameData.players).length === 2
-              ? gameData.players[player].colors[1]
-              : "",
+          "data-color2": Object.keys(gameData.players).length === 2 ? gameData.players[player].colors[1] : "",
         },
         elt("h2", {}, player),
         createCard("back")
@@ -586,6 +551,10 @@ document.addEventListener("DOMContentLoaded", function () {
     speak(`La partie avec ${players.join(", ")} vient d'être lancée`);
   }
 
+  /**
+   * Delete a game tab
+   * @param {number} id The game id
+   */
   function deleteGameTab(id) {
     let div = document.querySelector(`#punto .game[data-gameid="${id}"]`);
     if (!div) {
@@ -595,9 +564,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let radio = document.querySelector(`#punto input[id="radio-game-${id}"]`);
     log(radio);
     radio.remove();
-    let label = document.querySelector(
-      `#punto footer label[for="radio-game-${id}"]`
-    );
+    let label = document.querySelector(`#punto footer label[for="radio-game-${id}"]`);
     log(label);
     label.remove();
     home_radio.checked = true;
@@ -629,25 +596,22 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /**
-   * Update the player list on a launch game screen
+   * Update the player list on a game lobby
    * @param {number} id The game Id
    * @param {array} players The players list
    */
   function updatePlayersList(id, players) {
-    const aside = document.querySelector(
-      `#punto .game.launch[data-gameid='${id}'] aside`
-    );
+    const aside = document.querySelector(`#punto .game.launch[data-gameid='${id}'] aside`);
+    if (!aside) {
+      return;
+    }
 
     let others = list.filter((p) => !Object.keys(players).includes(p));
 
-    players = Object.keys(players).map(
-      (p) => new Object({ name: p, status: players[p].status })
-    );
+    players = Object.keys(players).map((p) => new Object({ name: p, status: players[p].status }));
 
     let ready = players.filter((p) => p.status === "ready");
     let pending = players.filter((p) => p.status === "pending");
-
-    console.table([ready, pending, others]);
 
     aside.innerHTML = "";
     if (ready.length > 0) {
@@ -672,14 +636,18 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   }
 
-  function updateGameData(game, data) {
+  /**
+   * Update the players status during a punto game
+   * @param {number} game The game ID
+   * @param {object} data The game data
+   */
+  function updatePlayersStatus(game, data) {
     for (let p in data.players) {
       if (data.players[p].status === "left") {
-        document
-          .querySelector(
-            `#punto .game[data-gameid="${game}"] .player[data-pseudo="${p}"]`
-          )
-          .classList.add("left");
+        let player = document.querySelector(`#punto .game[data-gameid="${game}"] .player[data-pseudo="${p}"]`);
+        if (player) {
+          player.classList.add("left");
+        }
       }
     }
   }
@@ -697,19 +665,18 @@ document.addEventListener("DOMContentLoaded", function () {
     return btn;
   }
 
+  /**
+   * Display the popup
+   * @param {string} title  The popup title
+   * @param {string} text   The message content
+   * @param {string} button The text on the button
+   */
   function displayPopup(title, text, button) {
     speak(`${title} ${text}`);
     document.getElementById("popup-title").innerHTML = title;
     document.getElementById("popup-text").innerHTML = text;
     document.getElementById("popup-btn").firstChild.innerHTML = button;
     document.getElementById("popup-cb").checked = true;
-  }
-
-  function chifoumiCommandShortcut(e) {
-    if (e.target.tagName === "P" && e.target.textContent !== pseudo) {
-      messageInput.value = `/chifoumi @${e.target.textContent} :`;
-      messageInput.focus();
-    }
   }
 
   /**
@@ -729,63 +696,13 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /**
-   * Send a chifoumi command from the chat
-   * @param {string} text The command content
-   */
-  function sendChifoumiCommand(text) {
-    let match = text.match(/^\/chifoumi ([^\s]+) ([^\s]+)$/);
-
-    if (match === null) {
-      addMessage(
-        "Nombre de paramètre incorrecte",
-        "[chifoumi]",
-        "chifoumi",
-        Date.now()
-      );
-      return;
-    }
-
-    let opponentMatch = match[1].match(/^@([^\s]+$)/);
-    if (opponentMatch === null) {
-      addMessage(
-        "Adversaire incorrecte ( @adversaire )",
-        "[chifoumi]",
-        "chifoumi",
-        Date.now()
-      );
-      return;
-    }
-
-    let opponent = opponentMatch[1];
-    if (opponent === pseudo) {
-      addMessage(
-        "Vous ne pouvez pas vous défier vous même",
-        "[chifoumi]",
-        "chifoumi",
-        Date.now()
-      );
-      return;
-    }
-
-    let elementMatch = match[2].match(/^:(paper|rock|scissors|lizard|spock):$/);
-    if (elementMatch === null) {
-      addMessage("Element incorrecte", "[chifoumi]", "chifoumi", Date.now());
-    }
-
-    let element = elementMatch[1];
-
-    sock.emit("chifoumi", {
-      to: opponent,
-      element: element,
-    });
-    return;
-  }
-
-  /**
    * Send a message on the chat
    */
   function sendMessage() {
     let text = messageInput.value.trim();
+    if (text === "") {
+      return;
+    }
     messageInput.value = "";
 
     if (text !== history.commands[0]) {
@@ -793,21 +710,6 @@ document.addEventListener("DOMContentLoaded", function () {
     }
     history.index = -1;
 
-    if (text.startsWith("/")) {
-      if (/^\/chifoumi /.test(text)) {
-        sendChifoumiCommand(text);
-      } else if (/^\/punto /.test(text)) {
-        sendPuntoCommand(text);
-      } else {
-        addMessage(
-          `Invalid command - "${text.match(/\/\S*/)}"`,
-          "[admin]",
-          "system",
-          Date.now()
-        );
-      }
-      return;
-    }
     let to = text.match(/^@\S+/);
 
     if (to) {
@@ -825,7 +727,7 @@ document.addEventListener("DOMContentLoaded", function () {
    */
   function addMessage(text, from, type, date) {
     date = new Date(date);
-    text = parseSmileys(text);
+    text = SmileysSystem.parse(text);
     let hours = ("0" + date.getHours()).slice(-2);
     let minutes = ("0" + date.getMinutes()).slice(-2);
     let secondes = ("0" + date.getSeconds()).slice(-2);
@@ -844,13 +746,6 @@ document.addEventListener("DOMContentLoaded", function () {
     chatMain.appendChild(msg);
     msg.scrollIntoView();
     speaker.speak(new SpeechSynthesisUtterance(`Message de ${from} : ${text}`));
-  }
-
-  function buzz() {
-    content.classList.add("buzz");
-    setTimeout(() => {
-      content.classList.remove("buzz");
-    }, 500);
   }
 
   /**

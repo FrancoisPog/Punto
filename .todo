@@ -1,15 +1,16 @@
 -> Diversifiers
 - Adapter le style pour modbile/tablette
 - mode sombre
-- jeu qui parle (robot ?)
+- jeu qui parle 
 - Animations
 
 -> Autre
 - Revoir les messages privées
-- Bien afficher les deux couleurs lors d'un jeu à 2 joueurs
 - Bouton quitter
 - Aficher l'heure des messages
-- fix bug connection 
-- au lancement, bien coher les bonnes cb 
+
+
+
+message de victoire même apès avoir quitté
 
 
