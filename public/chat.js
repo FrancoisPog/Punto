@@ -2,7 +2,17 @@
 
 const { log, assert, error, table } = console;
 
-const number = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
+const number = [
+  "one",
+  "two",
+  "three",
+  "four",
+  "five",
+  "six",
+  "seven",
+  "eight",
+  "nine",
+];
 
 const speaker = window.speechSynthesis;
 function speak(text) {
@@ -172,7 +182,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     // Personal message
     if (to === pseudo || from === pseudo) {
-      addMessage(text.split(/^@\S+/)[1], `${from} [privé${from === pseudo ? ` @${to}]` : "]"}`, "mp", date);
+      addMessage(
+        text.split(/^@\S+/)[1],
+        `${from} [privé${from === pseudo ? ` @${to}]` : "]"}`,
+        "mp",
+        date
+      );
     }
   });
 
@@ -203,7 +218,11 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (data.status < 0) {
       //console.error("Non zero status !");
-      displayPopup(`Attention !`, `${data.content ? data.content : "Erreur server"}`, "Compris !");
+      displayPopup(
+        `Attention !`,
+        `${data.content ? data.content : "Erreur server"}`,
+        "Compris !"
+      );
       return;
     }
 
@@ -227,7 +246,10 @@ document.addEventListener("DOMContentLoaded", function () {
       case "data": {
         let gameData = JSON.parse(data.content);
         let status = gameData.status;
-        if (status === "pending" && gameData.players[pseudo].status === "ready") {
+        if (
+          status === "pending" &&
+          gameData.players[pseudo].status === "ready"
+        ) {
           updatePlayersList(data.req.game, gameData.players);
         } else if (status === "running") {
           // First turn ?
@@ -235,7 +257,9 @@ document.addEventListener("DOMContentLoaded", function () {
             updatePlayersStatus(data.req.game, gameData);
           } else {
             if (gameData.nthRound > 1) {
-              let board = document.querySelector(`#punto .game[data-gameid="${data.req.game}"] .board`);
+              let board = document.querySelector(
+                `#punto .game[data-gameid="${data.req.game}"] .board`
+              );
               board.classList.add("past");
               board.onclick = () => {
                 board.remove();
@@ -250,7 +274,9 @@ document.addEventListener("DOMContentLoaded", function () {
 
               deleteGameTab(data.req.game);
               createLaunchedGame(data.req.game, gameData);
-              let gameFrame = document.querySelector(`#punto .game[data-gameid="${data.req.game}"]`);
+              let gameFrame = document.querySelector(
+                `#punto .game[data-gameid="${data.req.game}"]`
+              );
               gameFrame.appendChild(board);
 
               return;
@@ -301,10 +327,14 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       case "play": {
         let card = document.querySelector(
-          `#punto .game.play[data-gameid="${data.req.game}"] > .board:not(.past) .card:nth-child(${data.req.index + 1})`
+          `#punto .game.play[data-gameid="${
+            data.req.game
+          }"] > .board:not(.past) .card:nth-child(${data.req.index + 1})`
         );
 
-        card.className = `card ${data.card.color} ${number[data.card.value - 1]}`;
+        card.className = `card ${data.card.color} ${
+          number[data.card.value - 1]
+        }`;
 
         if (data.req.player === pseudo) {
           updatePlayerCard(data.req.game);
@@ -344,8 +374,14 @@ document.addEventListener("DOMContentLoaded", function () {
         break;
       }
       case "winner": {
-        displayPopup(`Terminé !`, `${data.winner} gagne cette partie !`, "Terminer !");
-        let board = document.querySelector(`#punto .game[data-gameid="${data.req.game}"] .board`);
+        displayPopup(
+          `Terminé !`,
+          `${data.winner} gagne cette partie !`,
+          "Terminer !"
+        );
+        let board = document.querySelector(
+          `#punto .game[data-gameid="${data.req.game}"] .board`
+        );
         board.classList.add("past");
         board.onclick = () => {
           quitGame();
@@ -364,7 +400,9 @@ document.addEventListener("DOMContentLoaded", function () {
    * Quit the game of selected frame
    */
   function quitGame() {
-    let gameTab = document.querySelector("#punto input[name='punto-frame']:checked + .game");
+    let gameTab = document.querySelector(
+      "#punto input[name='punto-frame']:checked + .game"
+    );
     if (gameTab) {
       let id = gameTab.dataset.gameid;
       sock.emit("punto", { action: "remove", game: id, player: pseudo });
@@ -436,7 +474,9 @@ document.addEventListener("DOMContentLoaded", function () {
           game: id,
           player: target.textContent,
         });
-        speak(`Vous venez de supprimer l'invitation pour ${target.textContent} !`);
+        speak(
+          `Vous venez de supprimer l'invitation pour ${target.textContent} !`
+        );
       } else if (target.classList.contains("others")) {
         sock.emit("punto", {
           action: "invite",
@@ -491,7 +531,11 @@ document.addEventListener("DOMContentLoaded", function () {
       ...Array(9)
         .fill(null)
         .map(() => elt("div", { class: "dot" })),
-      elt("p", { class: "punto-logo" }, ..."punto".split("").map((l) => elt("span", {}, l)))
+      elt(
+        "p",
+        { class: "punto-logo" },
+        ..."punto".split("").map((l) => elt("span", {}, l))
+      )
     );
   }
 
@@ -512,7 +556,10 @@ document.addEventListener("DOMContentLoaded", function () {
           class: "player ",
           "data-pseudo": player,
           "data-color1": gameData.players[player].colors[0],
-          "data-color2": Object.keys(gameData.players).length === 2 ? gameData.players[player].colors[1] : "",
+          "data-color2":
+            Object.keys(gameData.players).length === 2
+              ? gameData.players[player].colors[1]
+              : "",
         },
         elt("h2", {}, player),
         createCard("back")
@@ -564,7 +611,9 @@ document.addEventListener("DOMContentLoaded", function () {
     let radio = document.querySelector(`#punto input[id="radio-game-${id}"]`);
     log(radio);
     radio.remove();
-    let label = document.querySelector(`#punto footer label[for="radio-game-${id}"]`);
+    let label = document.querySelector(
+      `#punto footer label[for="radio-game-${id}"]`
+    );
     log(label);
     label.remove();
     home_radio.checked = true;
@@ -601,14 +650,18 @@ document.addEventListener("DOMContentLoaded", function () {
    * @param {array} players The players list
    */
   function updatePlayersList(id, players) {
-    const aside = document.querySelector(`#punto .game.launch[data-gameid='${id}'] aside`);
+    const aside = document.querySelector(
+      `#punto .game.launch[data-gameid='${id}'] aside`
+    );
     if (!aside) {
       return;
     }
 
     let others = list.filter((p) => !Object.keys(players).includes(p));
 
-    players = Object.keys(players).map((p) => new Object({ name: p, status: players[p].status }));
+    players = Object.keys(players).map(
+      (p) => new Object({ name: p, status: players[p].status })
+    );
 
     let ready = players.filter((p) => p.status === "ready");
     let pending = players.filter((p) => p.status === "pending");
@@ -644,7 +697,9 @@ document.addEventListener("DOMContentLoaded", function () {
   function updatePlayersStatus(game, data) {
     for (let p in data.players) {
       if (data.players[p].status === "left") {
-        let player = document.querySelector(`#punto .game[data-gameid="${game}"] .player[data-pseudo="${p}"]`);
+        let player = document.querySelector(
+          `#punto .game[data-gameid="${game}"] .player[data-pseudo="${p}"]`
+        );
         if (player) {
           player.classList.add("left");
         }

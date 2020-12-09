@@ -4054,7 +4054,9 @@ const SmileysSystem = (function () {
    */
   function matchSmileys(text) {
     text = text.substr(1).toLowerCase();
-    return emojis.filter((emoji) => emoji.code.toLowerCase().match(new RegExp(`[:_]${text}`)));
+    return emojis.filter((emoji) =>
+      emoji.code.toLowerCase().match(new RegExp(`[:_]${text}`))
+    );
   }
 
   /**
@@ -4092,7 +4094,9 @@ const SmileysSystem = (function () {
       let caretPos = input.selectionStart;
       while (
         i < smileyShortcutMatches.length &&
-        input.value.indexOf(smileyShortcutMatches[i]) + smileyShortcutMatches[i].length !== caretPos
+        input.value.indexOf(smileyShortcutMatches[i]) +
+          smileyShortcutMatches[i].length !==
+          caretPos
       ) {
         i++;
       }
@@ -4270,7 +4274,10 @@ const SmileysSystem = (function () {
 
     textInput.value = before + emoji + after;
     textInput.focus();
-    textInput.setSelectionRange(before.length + emoji.length + 1, before.length + emoji.length + 1);
+    textInput.setSelectionRange(
+      before.length + emoji.length + 1,
+      before.length + emoji.length + 1
+    );
     clear();
   }
 

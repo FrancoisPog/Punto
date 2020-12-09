@@ -221,7 +221,10 @@ function removePlayerPunto(req) {
   }
 
   // If the removed player is the current player -> AI
-  if (gameDataBefore.status === "running" && gameDataBefore.currentPlayer === req.player) {
+  if (
+    gameDataBefore.status === "running" &&
+    gameDataBefore.currentPlayer === req.player
+  ) {
     playAutoPunto(req.player, game);
   }
 
@@ -303,7 +306,8 @@ function invitePlayerPunto(req, socket) {
         break;
       }
       case -3: {
-        content = "Vous ne pouvez plus inviter de joueur une fois la partie lancée";
+        content =
+          "Vous ne pouvez plus inviter de joueur une fois la partie lancée";
         break;
       }
       default: {
@@ -413,7 +417,8 @@ function launchGamePunto(req, socket) {
         break;
       }
       case -2: {
-        content = "Trop peu de joueur sont prêt pour lancer cette partie : 2 minimum";
+        content =
+          "Trop peu de joueur sont prêt pour lancer cette partie : 2 minimum";
         break;
       }
       default: {
@@ -426,7 +431,9 @@ function launchGamePunto(req, socket) {
   }
 
   // Get the players still playing after the game launch
-  let playersAfterLaunch = Object.keys(JSON.parse(Punto.gameData(game)).players);
+  let playersAfterLaunch = Object.keys(
+    JSON.parse(Punto.gameData(game)).players
+  );
 
   for (let p of playersBeforeLaunch) {
     if (!clients[p]) {
@@ -646,7 +653,11 @@ function getWinnerPunto(req, socket) {
 
   let data = JSON.parse(Punto.gameData(game));
   if (data === -1) {
-    socket.emit("punto", { req, status: -1, content: "Cette partie n'existe pas" });
+    socket.emit("punto", {
+      req,
+      status: -1,
+      content: "Cette partie n'existe pas",
+    });
     return;
   }
   // Get the players of the game
