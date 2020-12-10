@@ -16,6 +16,9 @@ const number = [
 
 const speaker = window.speechSynthesis;
 function speak(text) {
+  if (!speaker) {
+    return;
+  }
   speaker.speak(new SpeechSynthesisUtterance(text));
 }
 
@@ -44,6 +47,12 @@ document.addEventListener("DOMContentLoaded", function () {
   let home_radio = document.getElementById("radio_home");
   let backHome = document.getElementById("backHome");
   let popup_radio = document.getElementById("popup-cb");
+  let darkmode = document.getElementById("darkmode");
+
+  darkmode.onclick = () => {
+    document.body.classList.toggle("dark");
+  };
+
   popup_radio.checked = false;
 
   // Display login screen
@@ -157,7 +166,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   sock.on("bienvenue", function (clientsList) {
     connected = true;
-    chatMain.innerHTML = "";
+    //chatMain.innerHTML = "";
     messageWrapper.appendChild(SmileysSystem.dom);
     document.body.classList.add("connected");
     document.getElementById("radio_home").checked = true;
@@ -184,8 +193,8 @@ document.addEventListener("DOMContentLoaded", function () {
     if (to === pseudo || from === pseudo) {
       addMessage(
         text.split(/^@\S+/)[1],
-        `${from} [privé${from === pseudo ? ` @${to}]` : "]"}`,
-        "mp",
+        `${from === pseudo ? "Vous" : from} à ${to === pseudo ? `vous` : to}`,
+        "mp" + (from === pseudo ? " moi" : ""),
         date
       );
     }
@@ -491,17 +500,11 @@ document.addEventListener("DOMContentLoaded", function () {
     let section = elt(
       "section",
       {},
-      elt("h2", {}, "Salle d'attente"),
-      createButton("Lancer la partie", {}, () => {
-        // for (let p of aside.getElementsByClassName("pending")) {
-        //   sock.emit("punto", {
-        //     action: "remove",
-        //     player: p.textContent,
-        //     game: id,
-        //   });
-        // }
+      elt("h2", {}, "Salle d'attente ⌛"),
+      createButton("Lancer la partie !", {}, () => {
         sock.emit("punto", { action: "launch", game: id });
-      })
+      }),
+      elt("p", {}, "Invitez des utilisateurs et lancez la partie ! 😁")
     );
 
     div.appendChild(section);

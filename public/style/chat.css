@@ -4,15 +4,64 @@
 }
 
 html {
+  font-size: 10px;
+  transition: font-size 400ms;
+}
+
+* {
+  user-select: none;
+}
+
+body {
   --punto-red: #e7000c;
   --punto-blue: #20a5ce;
   --punto-green: #77b629;
   --punto-orange: #f6b003;
   --chat-basic: #c1c9f4;
   --chat-mine: #798ef9;
-  --background: rgb(229, 229, 229);
-  font-size: 10px;
+  --background-s: 229, 229, 229;
+  --background: rgb(var(--background-s));
+  --punto-bg: #c4c4c4;
+  --shadow-light: lightgray 0 0 4px 4px;
+  --shadow-dark: rgb(141, 141, 141) 0 0 4px 4px;
+  --punto-footer: grey;
+  --aside-users-shadow: var(--shadow-light);
+  --text: black;
+  --input-bg: white;
+  --smileys-selection: #a0a0a0;
+  --btn-bottom: grey;
+  --btn-bg: rgb(229, 229, 229);
+  --card-none: darkgrey;
+  --card-none-hover: #212121;
 }
+
+body.dark {
+  --punto-red: #e7000c;
+  --punto-blue: #20a5ce;
+  --punto-green: #77b629;
+  --punto-orange: #f6b003;
+  --chat-basic: #212c74;
+  --chat-mine: #0d1957;
+  --background-s: 14, 14, 14;
+  --background: rgb(var(--background-s));
+  --punto-bg: #141313;
+  --shadow-light: none;
+  --shadow-dark: none;
+  --punto-footer: rgb(39, 36, 36);
+  --aside-users-shadow: 0 0 40px 4px black;
+  --text: lightgrey;
+  --input-bg: black;
+  --smileys-selection: #333;
+  --btn-bottom: #1e1d1f;
+  --btn-bg: rgb(46, 46, 46);
+  --card-none: #171616;
+  --card-none-hover: #212121;
+  color: var(--text);
+}
+
+/* * {
+  transition: background-color 70ms;
+} */
 
 @media screen and (max-width: 1600px) {
   html {
@@ -32,6 +81,12 @@ html {
   }
 }
 
+@media screen and (max-width: 1100px) {
+  html {
+    font-size: 5px;
+  }
+}
+
 .hidden {
   display: none;
 }
@@ -48,18 +103,19 @@ html {
   padding-bottom: 0.3rem;
   border-radius: 5px;
   transition: all 0.1s;
-  background-color: grey;
+  background-color: var(--btn-bottom);
   margin: 1rem;
   margin-bottom: 1rem;
 }
 
 .button span {
   user-select: none;
-  background: var(--background);
+  background: var(--btn-bg);
   display: block;
   padding: 0.6rem 1.5rem;
   border-radius: 5px;
   font-size: 1.5rem;
+  color: var(--text);
 }
 
 .button:active:not(.disabled) {
@@ -75,24 +131,8 @@ html {
 
 body {
   font-family: Arial, Helvetica, sans-serif;
-  background-color: #e5e5e5;
-}
+  background-color: var(--background);
 
-/* Guacamole */
-.guacamole {
-  background-color: lightgreen;
-}
-.guacamole #chat {
-  background-color: aquamarine;
-}
-
-.guacamole #chat main,
-.guacamole #chat aside,
-.guacamole #chat input {
-  background-color: #a7c3a7;
-}
-
-body {
   display: flex;
   flex-direction: row;
   justify-content: space-around;
@@ -116,6 +156,46 @@ aside#menu {
   display: flex;
 }
 
+aside#menu label {
+  cursor: pointer;
+}
+
+@media screen and (min-width: 1100px) {
+  #menu label {
+    opacity: 0.3;
+    transition: all 400ms;
+    transform: scale(0.7);
+  }
+
+  body.dark #menu label {
+    opacity: 1;
+  }
+
+  #menu label:hover {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+#menu .card {
+  height: 3.1rem;
+  width: 3.1rem;
+  margin: 0 1rem;
+  border-radius: 1rem;
+}
+
+label#sound-label > span {
+  display: inline-block;
+  width: 4rem;
+}
+
+input#sound-cb:checked + label > #sound-off {
+  display: none;
+}
+input#sound-cb:not(:checked) + label > #sound-on {
+  display: none;
+}
+
 #chat,
 #punto,
 body > input[type="checkbox"] {
@@ -129,6 +209,24 @@ body:not(.connected) #punto,
 body:not(.connected) #menu {
   display: none;
 }
+
+body.connected
+  input#cbChat:not(:checked)
+  + input#cbPunto:not(:checked)
+  ~ #chat {
+  display: block !important;
+}
+
+@media screen and (max-width: 950px) {
+  body input#cbChat:checked ~ #punto {
+    display: none;
+  }
+
+  body input#cbChat:not(:checked) ~ #punto {
+    display: flex;
+  }
+}
+
 body.connected #login {
   display: none;
 }
@@ -159,7 +257,7 @@ body.connected #login {
   grid-template-columns: repeat(3, 1fr);
   background-color: var(--background);
   border-radius: 5px;
-  box-shadow: grey 0 0 5px 5px;
+  box-shadow: var(--aside-users-shadow);
 }
 
 #chat #users p {
@@ -167,6 +265,7 @@ body.connected #login {
   padding-left: 1.2rem;
   /* border: 1px solid cyan; */
   font-size: 2rem;
+  width: max-content;
 }
 #chat #users p::before {
   content: "👤";
@@ -198,8 +297,8 @@ body.connected #login {
   height: 5rem;
   background: linear-gradient(
     to bottom,
-    rgb(229, 229, 229, 1) 0%,
-    rgba(229, 229, 229, 0) 100%
+    rgba(var(--background-s), 1) 0%,
+    rgba(var(--background-s), 0) 100%
   );
 }
 
@@ -214,9 +313,9 @@ body.connected #login {
   height: 10rem;
   background: linear-gradient(
     to bottom,
-    rgba(229, 229, 229, 0) 0%,
-    rgb(229, 229, 229, 0.8) 60%,
-    rgb(229, 229, 229, 1) 100%
+    rgba(var(--background-s), 0) 0%,
+    rgba(var(--background-s), 0.8) 60%,
+    rgba(var(--background-s), 1) 100%
   );
 }
 
@@ -234,7 +333,17 @@ body.connected #login {
   margin-bottom: 15rem;
 }
 
-#chat main p:not(.system) span {
+#menu span.chat-logo {
+  background-color: var(--chat-mine);
+  color: white;
+  font-size: 1rem;
+  margin: 0 1rem;
+  padding: 1rem;
+  max-width: none;
+}
+
+#chat main p:not(.system) span,
+span.chat-logo {
   position: relative;
   background-color: var(--chat-basic);
   padding: 1rem 1.7rem;
@@ -243,7 +352,7 @@ body.connected #login {
   width: max-content;
   max-width: 60%;
   font-size: 2rem;
-  box-shadow: darkgrey 0 0 10px 0px;
+  box-shadow: var(--shadow-light);
   user-select: none;
   margin: 1rem;
   word-break: break-all;
@@ -255,10 +364,11 @@ body.connected #login {
   left: 0;
   top: -1.7rem;
   font-size: 1.5rem;
+  width: max-content;
 }
 
 #chat main p.mp span {
-  background-color: var(--chat-mine);
+  background-color: var(--chat-basic);
 }
 
 /* My messages */
@@ -276,10 +386,26 @@ body.connected #login {
   right: 0;
 }
 
+#chat main p:not(.system):hover span[data-hours]::after {
+  content: attr(data-hours) " ";
+  width: max-content;
+  height: max-content;
+  position: absolute;
+  right: -10rem;
+  color: rgb(151, 150, 150);
+  top: 50%;
+
+  transform: translateY(-50%);
+}
+
+#chat main p.moi:hover span[data-hours]::after {
+  left: -10rem;
+}
+
 /* System messages */
 #chat main p.system {
   justify-content: center;
-  text-shadow: grey 0 2px 2px;
+  text-shadow: var(--shadow-light) 0 2px 2px;
 }
 
 #chat main p.chifoumi {
@@ -332,10 +458,12 @@ body.connected #login {
 #chat > footer input:first-of-type {
   border: 0;
   border-radius: 10rem;
-  box-shadow: gray 0 0 40px 1px;
+  box-shadow: var(--shadow-light);
   width: 100%;
   height: 100%;
   padding: 0 1.1rem;
+  color: var(--text);
+  background-color: var(--input-bg);
 }
 #chat > footer input:last-of-type {
   position: absolute;
@@ -349,26 +477,12 @@ body.connected #login {
   transform: translateY(-50%);
 }
 
-#chat aside p[data-score]:after {
-  content: " [" attr(data-score) " pts]";
-  float: right;
-}
-#chat aside p[data-score]:nth-child(1):before {
-  content: "\01F947";
-}
-#chat aside p[data-score]:nth-child(2):before {
-  content: "\01F948";
-}
-#chat aside p[data-score]:nth-child(3):before {
-  content: "\01F949";
-}
-
 /* Punto */
 #punto {
   position: relative;
   height: 80rem;
   width: 90rem;
-  background-color: #c4c4c4;
+  background-color: var(--punto-bg);
   border-radius: 10px;
   display: flex;
   flex-direction: row;
@@ -413,7 +527,7 @@ body.connected #login {
   position: absolute;
   left: 0;
   bottom: 0;
-  height: 3rem;
+
   width: 100%;
   display: flex;
   flex-direction: row;
@@ -422,6 +536,14 @@ body.connected #login {
 #punto footer label {
   flex: 1;
   text-align: center;
+  padding: 1rem 0;
+  background-color: var(--punto-footer);
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+#punto footer label.selected {
+  font-weight: bold;
 }
 
 #punto input#radio_home:not(:checked) + #home,
@@ -439,7 +561,6 @@ body.connected #login {
 }
 
 #punto section {
-  font-size: 3.5rem;
   text-align: center;
   margin-bottom: 2rem;
   width: 60%;
@@ -449,19 +570,38 @@ body.connected #login {
   justify-content: center;
 }
 
+#punto section h2 {
+  font-size: 3.5rem;
+  margin-bottom: 5rem;
+}
+
 #punto section:last-child {
   width: 100%;
 }
 
 #punto section p {
-  font-size: 2rem;
+  font-size: 2.5rem;
   width: 80%;
   margin: 1rem auto;
   text-align: center;
+  margin: 0.5rem;
+  margin-top: 5rem;
 }
 
-#punto #home .button span {
+#punto section .button span {
   font-size: 3rem;
+}
+
+#home > .punto-logo {
+  user-select: none;
+  background-color: black;
+  position: absolute;
+  top: 4rem;
+  font-size: 10rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1rem 3rem 3rem 3rem;
+  border-radius: 15px;
 }
 
 #punto aside {
@@ -486,6 +626,41 @@ body.connected #login {
 
 #punto aside p {
   font-size: 1.8rem;
+}
+
+#home > .card {
+  position: absolute;
+  height: 8rem;
+  width: 8rem;
+  border: 1px solid black;
+  box-shadow: none;
+}
+
+#home > .card:nth-of-type(1) {
+  bottom: 12rem;
+  left: 45rem;
+  transform: rotate(60deg);
+}
+#home > .card:nth-of-type(2) {
+  bottom: 12rem;
+  left: 53rem;
+  transform: rotate(0deg);
+  box-shadow: none;
+}
+#home > .card:nth-of-type(3) {
+  bottom: 12rem;
+  left: 30rem;
+  transform: rotate(10deg);
+  z-index: 10;
+  box-shadow: none;
+  border: 1px solid black;
+}
+#home > .card:nth-of-type(4) {
+  bottom: 12rem;
+  left: 35rem;
+  transform: rotate(-20deg);
+  box-shadow: none;
+  border: 1px solid black;
 }
 
 /* <-- Angles --> */
@@ -571,11 +746,6 @@ body.connected #login {
 #punto .board,
 #punto .player {
   transition: all 500ms;
-}
-
-#punto:hover .board,
-#punto:hover .player {
-  /* filter: blur(30px) grayscale(50%); */
 }
 
 #punto .player {
@@ -693,27 +863,41 @@ body.connected #login {
 }
 
 #punto .game.launch aside h4 {
+  user-select: none;
   font-weight: bold;
   font-size: 1.9rem;
+  width: 14rem;
+  text-align: center;
+  border-top: 1px solid var(--text);
+  border-bottom: 1px solid var(--text);
+  padding: 1rem 0;
+  margin: 1rem;
 }
 
 #punto .game.launch aside p {
+  user-select: none;
   position: relative;
   cursor: pointer;
   margin: 1rem 0;
-  padding-left: 1.5rem;
+  word-break: break-all;
 }
 
-#punto .game.launch aside p:hover::before {
+#punto .game.launch aside p.others:hover::before {
   content: "+";
   position: absolute;
-  left: 0;
+  left: -2rem;
+}
+
+#punto .game.launch aside p.pending:hover::before {
+  content: "-";
+  position: absolute;
+  left: -2rem;
 }
 
 /* Cards */
 .card {
   user-select: none;
-  box-shadow: grey 0px 0px 20px 4px;
+  box-shadow: var(--shadow-dark);
   height: 5.5rem;
   width: 5.5rem;
   /* border: 1px solid black; */
@@ -726,7 +910,8 @@ body.connected #login {
 }
 
 .card.none {
-  background-color: inherit;
+  background-color: var(--card-none);
+
   box-shadow: none;
 }
 
@@ -735,7 +920,7 @@ body.connected #login {
 }
 
 .card.none:hover {
-  background-color: #a0a0a0;
+  background-color: var(--card-none-hover);
 }
 
 .card .dot {
@@ -862,7 +1047,8 @@ body.connected #login {
   position: absolute;
   top: 50%;
   left: 50%;
-  background-color: white;
+  background-color: var(--punto-bg);
+
   transform: translate(-50%, -50%);
   -webkit-transform: translate(-50%, -50%);
   -ms-transform: translate(-50%, -50%);
@@ -875,6 +1061,10 @@ body.connected #login {
   padding: 3px;
   font-size: 80%;
   margin: 10px;
+  color: var(--text);
+  background-color: var(--input-bg);
+  border: none;
+  padding: 0.5rem;
 }
 #login #pseudo {
   width: 80%;
@@ -923,14 +1113,15 @@ body.connected #login {
 
 #autocomplete p {
   padding: 1.5rem;
-  background: rgba(245, 245, 245, 0.9);
+  background: var(--input-bg);
+  opacity: 0.9;
   border-radius: 5rem;
   margin: 1rem;
-  box-shadow: lightgrey 0 0 1px 1px;
+  box-shadow: var(--aside-users-shadow);
 }
 
 #autocomplete p.selected {
-  background: #a0a0a0;
+  background: var(--smileys-selection);
 }
 
 #popup-cb:not(:checked) + div {
@@ -953,7 +1144,7 @@ body.connected #login {
 }
 
 .popup > div > div {
-  background-color: white;
+  background-color: var(--background);
   padding: 3rem;
   border-radius: 5px;
 }

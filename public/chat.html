@@ -12,7 +12,7 @@
     <script src="./chat.js"></script>
   </head>
 
-  <body class="connected">
+  <body class="connected dark">
     <div id="login">
       <p>Choisissez votre pseudo :</p>
       <input
@@ -56,15 +56,7 @@
         <p class="moi"><span data-author="Vous">Super et vous ?</span></p>
       </main>
       <input type="checkbox" name="cbUsers" id="cbUsers" />
-      <aside id="users">
-        <p>François</p>
-        <p>Fanny</p>
-        <p>Simon</p>
-        <p>François</p>
-        <p>Fanny</p>
-        <p>Simon</p>
-        <p>François</p>
-      </aside>
+      <aside id="users"></aside>
       <footer>
         <label for="cbUsers" title="Voir les participants">👥</label>
         <div id="textInput">
@@ -75,9 +67,33 @@
     </div>
 
     <aside id="menu">
-      <label for="cbChat" title="Afficher/Masquer le chat">&#128172;</label>
+      <label id="darkmode">🌓</label>
+      <label for="cbChat" title="Afficher/Masquer le chat">
+        <span class="chat-logo">●●●</span></label
+      >
       <h2 id="userPseudo">François</h2>
-      <label for="cbPunto" title="Afficher/Masquer le jeu">🎮</label>
+      <label for="cbPunto" title="Afficher/Masquer le jeu"
+        ><div class="card five blue">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <p class="punto-logo">
+            <span>p</span><span>u</span><span>n</span><span>t</span
+            ><span>o</span>
+          </p>
+        </div></label
+      >
+      <input type="checkbox" name="" class="hidden" id="sound-cb" />
+      <label for="sound-cb" id="sound-label"
+        ><span id="sound-on">🔊</span><span id="sound-off">🔈</span></label
+      >
+      <label id="quitBtn">🚪</label>
     </aside>
 
     <div id="punto">
@@ -90,12 +106,75 @@
         checked
       />
       <div id="home">
+        <h2 class="punto-logo">
+          <span>p</span><span>u</span><span>n</span><span>t</span><span>o</span>
+        </h2>
+        <div class="card six red">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <p class="punto-logo">
+            <span>p</span><span>u</span><span>n</span><span>t</span
+            ><span>o</span>
+          </p>
+        </div>
+        <div class="card three green">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <p class="punto-logo">
+            <span>p</span><span>u</span><span>n</span><span>t</span
+            ><span>o</span>
+          </p>
+        </div>
+        <div class="card back">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <p class="punto-logo">
+            <span>p</span><span>u</span><span>n</span><span>t</span
+            ><span>o</span>
+          </p>
+        </div>
+        <div class="card five orange">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <p class="punto-logo">
+            <span>p</span><span>u</span><span>n</span><span>t</span
+            ><span>o</span>
+          </p>
+        </div>
         <section>
-          <h2>Vous n'avez pas de partie en cours...</h2>
+          <h2>Bienvenue au jeu du Punto !</h2>
           <div class="button" id="btnPuntoCreate">
             <span>Créer une partie !</span>
           </div>
-          <p>Inviter vos amis pour une super partie de Punto</p>
+          <p>Invitez vos amis pour une super partie de Punto ! 😄</p>
         </section>
         <aside>
           <h3>Le punto c'est quoi ?</h3>
