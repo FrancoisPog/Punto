@@ -14,14 +14,6 @@ const number = [
   "nine",
 ];
 
-const speaker = window.speechSynthesis;
-function speak(text) {
-  if (!speaker) {
-    return;
-  }
-  speaker.speak(new SpeechSynthesisUtterance(text));
-}
-
 document.addEventListener("DOMContentLoaded", function () {
   // Socket connection
   let sock = io.connect();
@@ -35,7 +27,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let pseudoInput = document.getElementById("pseudo");
   let asideClients = document.querySelector("#users");
   let btnConnect = document.getElementById("btnConnecter");
-  let btnLogout = document.getElementById("btnQuitter");
+  let btnLogout = document.getElementById("quitBtn");
   let chatMain = document.querySelector("#chat main");
   let messageInput = document.getElementById("monMessage");
   let btnSend = document.getElementById("btnEnvoyer");
@@ -48,6 +40,7 @@ document.addEventListener("DOMContentLoaded", function () {
   let backHome = document.getElementById("backHome");
   let popup_radio = document.getElementById("popup-cb");
   let darkmode = document.getElementById("darkmode");
+  let souncCb = document.getElementById("sound-cb");
 
   darkmode.onclick = () => {
     document.body.classList.toggle("dark");
@@ -100,10 +93,10 @@ document.addEventListener("DOMContentLoaded", function () {
     }
   };
 
-  // btnLogout.onclick = () => {
-  //   sock.emit("logout");
-  //   document.body.classList.remove("connected");
-  // };
+  btnLogout.onclick = () => {
+    sock.emit("logout");
+    document.body.classList.remove("connected");
+  };
 
   for (let event of ["input", "focus", "click", "keyup"]) {
     // Active the auto-complete smiley system at every interaction with the message input, if the content isn't a command
@@ -172,6 +165,9 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("radio_home").checked = true;
     document.getElementById("userPseudo").textContent = pseudo;
     updateList(clientsList);
+    speak(
+      `Bienvenue ${pseudo}, la température extérieur est de 3 degrés, bon voyage avec Pounto Airlines !`
+    );
   });
 
   sock.on("liste", updateList);
@@ -206,9 +202,185 @@ document.addEventListener("DOMContentLoaded", function () {
   //                    FUNCTIONS
   // *************************************************
 
-  const PuntoHandler = {};
+  /**
+   * Handler for different punto event
+   */
+  const PuntoHandler = Object.create(null);
 
-  PuntoHandler.create = function () {};
+  PuntoHandler.create = function (data) {
+    createPuntoLobby(data.game);
+    speak(`Vous venez de créer une nouvelle partie !`);
+  };
+
+  PuntoHandler.invite = function (data) {
+    if (data.req.player !== pseudo) {
+      // If the client isn't the one invited -> update the players list
+      updatePlayersList(data.req.game, data.gameData.players);
+      return;
+    }
+    createPuntoInvitation(data.req.from, data.req.game);
+  };
+
+  PuntoHandler.data = function (data) {
+    let gameData = JSON.parse(data.content);
+    let status = gameData.status;
+
+    if (status === "pending" && gameData.players[pseudo].status === "ready") {
+      // If the game is pendin -> update the players list in the lobby
+      updatePlayersList(data.req.game, gameData.players);
+    } else if (status === "running") {
+      // If the game is running
+      if (gameData.board.some((c) => c !== null)) {
+        // If this is not the first turn in a round -> update the status od the players
+        updatePlayersStatus(data.req.game, gameData);
+      } else {
+        // If it's the first turn in a round
+        if (gameData.nthRound > 1) {
+          // If it's not the first round
+          let board = document.querySelector(
+            `#punto .game[data-gameid="${data.req.game}"] .board`
+          );
+          // Set the current board as past
+          board.classList.add("past");
+          // Set the handler for click on the board -> remove it and display the new round
+          board.onclick = () => {
+            board.remove();
+            if (gameData.currentPlayer === pseudo) {
+              sock.emit("punto", {
+                action: "card",
+                game: data.req.game,
+                player: pseudo,
+              });
+            }
+          };
+
+          // Create the game tab for the new round
+          // TODO Insert the new tab at the same place
+          deleteGameTab(data.req.game);
+          createLaunchedGame(data.req.game, gameData);
+          let gameFrame = document.querySelector(
+            `#punto .game[data-gameid="${data.req.game}"]`
+          );
+          gameFrame.appendChild(board);
+
+          return;
+        } else {
+          // First turn of the first round -> create the game tab
+          deleteGameTab(data.req.game);
+          createLaunchedGame(data.req.game, gameData);
+        }
+      }
+      if (gameData.currentPlayer === pseudo) {
+        // If the current player is the current one, request his card
+        sock.emit("punto", {
+          action: "card",
+          game: data.req.game,
+          player: pseudo,
+        });
+      }
+    }
+  };
+
+  PuntoHandler.remove = function (data) {
+    if (data.status === 1 || data.req.player === pseudo) {
+      // If the user is the removed player, delete the game tab
+      deleteGameTab(data.req.game);
+    } else {
+      // Otherwise, request new game data to update to players list
+      sock.emit("punto", { action: "data", game: data.req.game });
+    }
+  };
+
+  PuntoHandler.join = function (data) {
+    if (data.req.player === pseudo) {
+      // If the user join a game -> create the lobby element
+      deleteGameTab(data.req.game);
+      createPuntoLobby(data.req.game);
+      speak("Vous venez de rejoindre la partie");
+    } else {
+      speak(`${data.req.player} vient de rejoindre la partie ! `);
+    }
+    // Request game data to update the players list
+    sock.emit("punto", { action: "data", game: data.req.game });
+  };
+
+  PuntoHandler.launch = function (data) {
+    sock.emit("punto", { action: "data", game: data.req.game });
+  };
+
+  PuntoHandler.play = function (data) {
+    // Get the card element according to the game and the index
+    let card = document.querySelector(
+      `#punto .game.play[data-gameid="${
+        data.req.game
+      }"] > .board:not(.past) .card:nth-child(${data.req.index + 1})`
+    );
+
+    // Update the card
+    card.className = `card ${data.card.color} ${number[data.card.value - 1]}`;
+
+    if (data.req.player === pseudo) {
+      // If the user just played -> update his card
+      updatePlayerCard(data.req.game);
+    }
+
+    if (data.status === 1) {
+      // If the round is finished
+      displayPopup(
+        "Terminé !",
+        `${
+          data.winner ? data.winner + " " : "Personne n'"
+        }a gagné cette manche !<br/> Cliquer sur le plateau pour continuer`,
+        "OK !"
+      );
+
+      if (data.req.player === pseudo) {
+        sock.emit("punto", { action: "next", game: data.req.game });
+      }
+      return;
+    }
+
+    if (data.next === pseudo) {
+      // If the next player is the user -> request the card
+      sock.emit("punto", {
+        action: "card",
+        game: data.req.game,
+        player: pseudo,
+      });
+    }
+  };
+
+  PuntoHandler.card = function (data) {
+    let card = JSON.parse(data.content);
+    updatePlayerCard(data.req.game, card);
+    speak("C'est à votre tour de jouer");
+  };
+
+  PuntoHandler.next = function (data) {
+    if (data.status > 0) {
+      // If the game is finished -> request the winner
+      sock.emit("punto", { action: "winner", game: data.req.game });
+      return;
+    }
+    // Request the new round data
+    sock.emit("punto", { action: "data", game: data.req.game });
+  };
+
+  PuntoHandler.winner = function (data) {
+    displayPopup(
+      `Terminé !`,
+      `${data.winner} gagne cette partie !`,
+      "Terminer !"
+    );
+    let board = document.querySelector(
+      `#punto .game[data-gameid="${data.req.game}"] .board`
+    );
+    board.classList.add("past");
+    board.onclick = () => {
+      quitGame();
+      deleteGameTab(data.req.game);
+    };
+  };
 
   /**
    * Handle punto events
@@ -235,173 +407,10 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    switch (action) {
-      case "create": {
-        console.assert(data.game);
-        createPuntoLobby(data.game);
-        speak(`Vous venez de créer une nouvelle partie !`);
-        break;
-      }
-      case "invite": {
-        console.assert(data.req.from && data.req.game && data.req.player);
-        if (data.req.player !== pseudo) {
-          // If the client isn't the one invited -> update the players list
-          updatePlayersList(data.req.game, data.gameData.players);
-          return;
-        }
-        createPuntoInvitation(data.req.from, data.req.game);
-        break;
-      }
-      case "data": {
-        let gameData = JSON.parse(data.content);
-        let status = gameData.status;
-        if (
-          status === "pending" &&
-          gameData.players[pseudo].status === "ready"
-        ) {
-          updatePlayersList(data.req.game, gameData.players);
-        } else if (status === "running") {
-          // First turn ?
-          if (gameData.board.some((c) => c !== null)) {
-            updatePlayersStatus(data.req.game, gameData);
-          } else {
-            if (gameData.nthRound > 1) {
-              let board = document.querySelector(
-                `#punto .game[data-gameid="${data.req.game}"] .board`
-              );
-              board.classList.add("past");
-              board.onclick = () => {
-                board.remove();
-                if (gameData.currentPlayer === pseudo) {
-                  sock.emit("punto", {
-                    action: "card",
-                    game: data.req.game,
-                    player: pseudo,
-                  });
-                }
-              };
-
-              deleteGameTab(data.req.game);
-              createLaunchedGame(data.req.game, gameData);
-              let gameFrame = document.querySelector(
-                `#punto .game[data-gameid="${data.req.game}"]`
-              );
-              gameFrame.appendChild(board);
-
-              return;
-            } else {
-              deleteGameTab(data.req.game);
-              createLaunchedGame(data.req.game, gameData);
-            }
-          }
-          if (gameData.currentPlayer === pseudo) {
-            sock.emit("punto", {
-              action: "card",
-              game: data.req.game,
-              player: pseudo,
-            });
-          }
-        }
-
-        break;
-      }
-      case "remove": {
-        if (data.status === 1 || data.req.player === pseudo) {
-          deleteGameTab(data.req.game);
-        } else {
-          sock.emit("punto", { action: "data", game: data.req.game });
-        }
-        break;
-      }
-      case "join": {
-        if (data.req.player === pseudo) {
-          deleteGameTab(data.req.game);
-          createPuntoLobby(data.req.game);
-          speak("Vous venez de rejoindre la partie");
-        } else {
-          speak(`${data.req.player} vient de rejoindre la partie ! `);
-        }
-        sock.emit("punto", { action: "data", game: data.req.game });
-        break;
-      }
-      case "launch": {
-        sock.emit("punto", { action: "data", game: data.req.game });
-        break;
-      }
-      case "card": {
-        let card = JSON.parse(data.content);
-        updatePlayerCard(data.req.game, card);
-        speak("C'est à votre tour de jouer");
-        break;
-      }
-      case "play": {
-        let card = document.querySelector(
-          `#punto .game.play[data-gameid="${
-            data.req.game
-          }"] > .board:not(.past) .card:nth-child(${data.req.index + 1})`
-        );
-
-        card.className = `card ${data.card.color} ${
-          number[data.card.value - 1]
-        }`;
-
-        if (data.req.player === pseudo) {
-          updatePlayerCard(data.req.game);
-        }
-
-        if (data.status === 1) {
-          displayPopup(
-            "Terminé !",
-            `${
-              data.winner ? data.winner + " " : "Personne n'"
-            }a gagné cette manche !<br/> Cliquer sur le plateau pour continuer`,
-            "OK !"
-          );
-
-          if (data.req.player === pseudo) {
-            sock.emit("punto", { action: "next", game: data.req.game });
-          }
-          break;
-        }
-
-        if (data.next === pseudo) {
-          sock.emit("punto", {
-            action: "card",
-            game: data.req.game,
-            player: pseudo,
-          });
-        }
-
-        break;
-      }
-      case "next": {
-        if (data.status > 0) {
-          sock.emit("punto", { action: "winner", game: data.req.game });
-          return;
-        }
-        sock.emit("punto", { action: "data", game: data.req.game });
-        break;
-      }
-      case "winner": {
-        displayPopup(
-          `Terminé !`,
-          `${data.winner} gagne cette partie !`,
-          "Terminer !"
-        );
-        let board = document.querySelector(
-          `#punto .game[data-gameid="${data.req.game}"] .board`
-        );
-        board.classList.add("past");
-        board.onclick = () => {
-          quitGame();
-          deleteGameTab(data.req.game);
-        };
-
-        break;
-      }
-      default: {
-        console.error(`The "${action}" action is not handled !`);
-      }
+    if (PuntoHandler[action]) {
+      PuntoHandler[action](data);
+    } else {
+      console.error(`The "${action}" action is not handled !`);
     }
   }
 
@@ -462,21 +471,24 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /**
-   * Create a new punto game
+   * Create a new punto lobby
    * @param {number} id The game id
    * @param {object[]} players The list of player in this game
    */
   function createPuntoLobby(id, players) {
     let div = createGameTab(id, "launch");
 
+    // Create an empty aside
     let aside = elt("aside", {});
 
+    // Handle clicks on players inside the aside
     aside.onclick = (e) => {
       let target = e.target;
       if (target.tagName !== "P") {
         return;
       }
 
+      // click on pending player -> remove the invitation
       if (target.classList.contains("pending")) {
         sock.emit("punto", {
           action: "remove",
@@ -487,6 +499,7 @@ document.addEventListener("DOMContentLoaded", function () {
           `Vous venez de supprimer l'invitation pour ${target.textContent} !`
         );
       } else if (target.classList.contains("others")) {
+        // click on a user -> invite him
         sock.emit("punto", {
           action: "invite",
           game: id,
@@ -497,6 +510,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     };
 
+    // Create the section
     let section = elt(
       "section",
       {},
@@ -515,6 +529,7 @@ document.addEventListener("DOMContentLoaded", function () {
       players[pseudo] = { status: "ready" };
     }
 
+    // Update the aside players list
     updatePlayersList(id, players);
   }
 
@@ -553,6 +568,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let players = [];
     for (let player in gameData.players) {
       players.push(player);
+      // Create the player element
       let playerElt = elt(
         "div",
         {
@@ -574,6 +590,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     }
 
+    // Create the board element
     let board = elt(
       "div",
       { class: "board" },
@@ -584,6 +601,7 @@ document.addEventListener("DOMContentLoaded", function () {
         return createCard(c.value, c.color);
       })
     );
+    // Handle the clicks on cards
     board.onclick = (e) => {
       let card = e.target;
       if (card.classList.contains("dot")) {
@@ -598,7 +616,11 @@ document.addEventListener("DOMContentLoaded", function () {
       sock.emit("punto", { action: "play", game: id, index, player: pseudo });
     };
     div.appendChild(board);
-    speak(`La partie avec ${players.join(", ")} vient d'être lancée`);
+    speak(
+      `La partie avec ${players
+        .filter((p) => p !== pseudo)
+        .join(", ")} vient d'être lancée`
+    );
   }
 
   /**
@@ -644,7 +666,7 @@ document.addEventListener("DOMContentLoaded", function () {
     );
 
     div.appendChild(section);
-    speak(`${from} vous invite à jouer au Punto !`);
+    speak(`${from} vous invite à jouer au Pounto !`);
   }
 
   /**
@@ -653,6 +675,7 @@ document.addEventListener("DOMContentLoaded", function () {
    * @param {array} players The players list
    */
   function updatePlayersList(id, players) {
+    // Get the aside of the game element
     const aside = document.querySelector(
       `#punto .game.launch[data-gameid='${id}'] aside`
     );
@@ -660,15 +683,19 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    // Keep users who are not in the game
     let others = list.filter((p) => !Object.keys(players).includes(p));
 
+    // Format the players objects
     players = Object.keys(players).map(
       (p) => new Object({ name: p, status: players[p].status })
     );
 
+    /// Get the ready and pending players
     let ready = players.filter((p) => p.status === "ready");
     let pending = players.filter((p) => p.status === "pending");
 
+    // Display the new list of players
     aside.innerHTML = "";
     if (ready.length > 0) {
       aside.appendChild(elt("h4", {}, "Prêts"));
@@ -693,7 +720,7 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /**
-   * Update the players status during a punto game
+   * Update the players status during a punto game (check if a player left the game)
    * @param {number} game The game ID
    * @param {object} data The game data
    */
@@ -724,13 +751,16 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   /**
-   * Display the popup
+   * Display the popup with a specific content,
    * @param {string} title  The popup title
    * @param {string} text   The message content
    * @param {string} button The text on the button
+   * @param {boolean} speakToo If true, the popup content will be said by the speech synthesis
    */
-  function displayPopup(title, text, button) {
-    speak(`${title} ${text}`);
+  function displayPopup(title, text, button, speakToo = true) {
+    if (speakToo) {
+      speak(`${title} ${text.replace("<br/>", "")}`);
+    }
     document.getElementById("popup-title").innerHTML = title;
     document.getElementById("popup-text").innerHTML = text;
     document.getElementById("popup-btn").firstChild.innerHTML = button;
@@ -803,7 +833,13 @@ document.addEventListener("DOMContentLoaded", function () {
     );
     chatMain.appendChild(msg);
     msg.scrollIntoView();
-    speaker.speak(new SpeechSynthesisUtterance(`Message de ${from} : ${text}`));
+    if (from === pseudo) {
+      speak(`Vous venez d'envoyer le message : ${text}`);
+    } else if (type === "system") {
+      speak(text);
+    } else {
+      speak(`Message de ${from} : ${text}`);
+    }
   }
 
   /**
@@ -825,5 +861,17 @@ document.addEventListener("DOMContentLoaded", function () {
     for (let game of document.querySelectorAll(".game:not(.join)")) {
       sock.emit("punto", { action: "data", game: game.dataset.gameid });
     }
+  }
+
+  /**
+   * Use the speech synthesis to say something
+   * @param {*} text
+   */
+  function speak(text) {
+    const speaker = window.speechSynthesis;
+    if (!speaker || !souncCb.checked) {
+      return;
+    }
+    speaker.speak(new SpeechSynthesisUtterance(text));
   }
 });
