@@ -199,7 +199,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
   sock.on("bienvenue", function (clientsList) {
     connected = true;
-    //chatMain.innerHTML = "";
+    chatMain.innerHTML = "";
     messageWrapper.appendChild(SmileysSystem.dom);
     document.body.classList.add("connected");
     document.getElementById("radio_home").checked = true;
@@ -466,7 +466,7 @@ document.addEventListener("DOMContentLoaded", function () {
     );
 
     if (card) {
-      cardElt.className = `card ${card.color} ${number[card.value - 1]}`;
+      cardElt.className = `card ${card.color} ${number[card.value - 1]} anim`;
     } else {
       cardElt.className = `card back`;
     }
@@ -573,14 +573,22 @@ document.addEventListener("DOMContentLoaded", function () {
       {
         class: `card ${type} ${/^(none|back)$/.test(type) ? "" : color}`,
       },
-
-      ...Array(9)
-        .fill(null)
-        .map(() => elt("div", { class: "dot" })),
       elt(
-        "p",
-        { class: "punto-logo" },
-        ..."punto".split("").map((l) => elt("span", {}, l))
+        "div",
+        { class: "front" },
+
+        ...Array(9)
+          .fill(null)
+          .map(() => elt("div", { class: "dot" }))
+      ),
+      elt(
+        "div",
+        { class: "back" },
+        elt(
+          "p",
+          { class: "punto-logo" },
+          ..."punto".split("").map((l) => elt("span", {}, l))
+        )
       )
     );
   }
@@ -633,6 +641,11 @@ document.addEventListener("DOMContentLoaded", function () {
     board.onclick = (e) => {
       let card = e.target;
       if (card.classList.contains("dot")) {
+        card = card.parentElement.parentElement;
+      } else if (
+        card.classList.contains("front") ||
+        card.classList.contains("back")
+      ) {
         card = card.parentElement;
       }
       if (!card.classList.contains("card")) {

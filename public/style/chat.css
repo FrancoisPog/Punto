@@ -639,7 +639,7 @@ span.chat-logo {
 #home > .card:nth-of-type(1) {
   bottom: 12rem;
   left: 45rem;
-  transform: rotate(60deg);
+  transform: rotateZ(60deg);
 }
 #home > .card:nth-of-type(2) {
   bottom: 12rem;
@@ -650,7 +650,7 @@ span.chat-logo {
 #home > .card:nth-of-type(3) {
   bottom: 12rem;
   left: 30rem;
-  transform: rotate(10deg);
+  transform: rotateZ(10deg) rotateY(180deg);
   z-index: 10;
   box-shadow: none;
   border: 1px solid black;
@@ -827,7 +827,7 @@ span.chat-logo {
 }
 
 #punto .player:nth-child(2) .card {
-  transform: rotate(180deg);
+  transform: rotateX(180deg);
 }
 
 #punto .player:nth-child(3) {
@@ -836,7 +836,7 @@ span.chat-logo {
 }
 
 #punto .player:nth-child(3) .card {
-  transform: rotate(-90deg);
+  transform: rotateZ(-90deg) rotateY(180deg);
 }
 
 #punto .player:nth-child(4) {
@@ -845,7 +845,7 @@ span.chat-logo {
 }
 
 #punto .player:nth-child(4) .card {
-  transform: rotate(90deg);
+  transform: rotateZ(90deg) rotateY(180deg);
 }
 
 .player .card {
@@ -896,18 +896,55 @@ span.chat-logo {
 
 /* Cards */
 .card {
+  position: relative;
   user-select: none;
   box-shadow: var(--shadow-dark);
+  background-color: rgb(30, 40, 40);
   height: 5.5rem;
   width: 5.5rem;
   /* border: 1px solid black; */
   margin: 7px;
   border-radius: 10px;
+  transform-style: preserve-3d;
+
+  border-radius: 10px;
+}
+
+.card.back {
+  transform: rotateY(180deg);
+}
+
+.card:not(.back) {
+  transition: transform 0.5s;
+}
+
+.front,
+.card .back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+}
+
+.front {
   display: grid;
   grid-template-columns: repeat(3, 33%);
-  padding: 3px;
-  background-color: rgb(30, 40, 40);
+  padding: 5%;
 }
+
+/* .card .front {
+  transform: rotateY(180deg);
+} */
+
+.card .back {
+  transform: rotateY(180deg);
+}
+
+/* .card.back .back {
+  transform: rotateY(0);
+} */
 
 .card.none {
   background-color: var(--card-none);
@@ -930,16 +967,21 @@ span.chat-logo {
   background-color: var(--punto-blue);
   align-self: center;
   justify-self: center;
+  backface-visibility: hidden;
 }
+
 .card.green .dot {
   background-color: var(--punto-green);
 }
+
 .card.red .dot {
   background-color: var(--punto-red);
 }
+
 .card.blue .dot {
   background-color: var(--punto-blue);
 }
+
 .card.orange .dot {
   background-color: var(--punto-orange);
 }
@@ -976,7 +1018,7 @@ span.chat-logo {
   background-color: inherit;
 }
 
-.card.back {
+.card .back {
   display: flex;
   flex-direction: row;
   justify-content: center;
@@ -984,25 +1026,22 @@ span.chat-logo {
 }
 
 .card:not(.back) p {
-  display: none;
+  /*display: none;*/
 }
 
-.card.back p {
+.card .back p {
   /* transform: rotate(90deg); */
   position: relative;
   top: -5px;
 }
-.card.back p span {
+
+.card .back p span {
   font-family: "punto", "Comic Sans MS";
   font-weight: 500;
   margin: auto;
   font-size: 1.5rem;
   display: inline;
   margin: 0 0.04rem;
-}
-
-.card.back .dot {
-  display: none;
 }
 
 .punto-logo {
@@ -1013,31 +1052,17 @@ span.chat-logo {
 .punto-logo span:nth-child(5) {
   color: var(--punto-red);
 }
+
 .punto-logo span:nth-child(2) {
   color: var(--punto-blue);
 }
+
 .punto-logo span:nth-child(3) {
   color: var(--punto-orange);
 }
+
 .punto-logo span:nth-child(4) {
   color: var(--punto-green);
-}
-
-.card:hover {
-  /* animation: anim 3s cubic-bezier(0.3, 0.4, 0.4, 0.3); */
-}
-
-@keyframes anim {
-  0% {
-    transform: rotate3d(0, 1, 0, 0);
-  }
-  50% {
-    transform: rotate3d(0, 1, 0, 90deg);
-  }
-
-  100% {
-    transform: rotate3d(0, 1, 0, 0);
-  }
 }
 
 /* Login */
