@@ -222,7 +222,7 @@ body.connected
     display: none;
   }
 
-  body input#cbChat:not(:checked) ~ #punto {
+  body.connected input#cbChat:not(:checked) ~ #punto {
     display: flex;
   }
 }

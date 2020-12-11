@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", function () {
   //                HISTORY SYSTEM
   // *************************************************
 
-  let history = {
+  const history = {
     commands: [],
     index: -1,
     prev: () => {
@@ -70,6 +70,46 @@ document.addEventListener("DOMContentLoaded", function () {
         history.index--;
         return history.commands[history.index];
       }
+    },
+  };
+
+  // *************************************************
+  //                  REMINDERS
+  // *************************************************
+
+  const reminders = {
+    // TODO change for an array
+    types: {
+      1: "N'oubliez pas de jouer votre tour !",
+      2: "Hé ho du bateau, qu'est ce que t'attends pour poser ta carte ?",
+      3: `Bon %PLAYER_NAME% tu joues ? Tu fais chier tout le monde là...`,
+      4: `Il est maintenant %HOURS%, et %PLAYER_NAME% n'a toujours pas posé sa carte...`,
+      5: `Houston on a un problème, %PLAYER_NAME% ne répond plus...`,
+    },
+    add: (game, type = 1) => {
+      if (!reminders.types[type]) {
+        console.error("Reminders : Invalid type");
+        return;
+      }
+      reminders[game] = setTimeout(() => {
+        const now = new Date();
+
+        speak(
+          reminders.types[type]
+            .replaceAll("%PLAYER_NAME%", pseudo)
+            .replaceAll(
+              "%HOURS%",
+              `${now.getHours()} heures et ${now.getMinutes()} minutes`
+            )
+        );
+        reminders.add(
+          game,
+          type === Object.keys(reminders.types).length ? type : type + 1
+        );
+      }, 10000);
+    },
+    remove: (game) => {
+      clearTimeout(reminders[game]);
     },
   };
 
@@ -246,11 +286,7 @@ document.addEventListener("DOMContentLoaded", function () {
           board.onclick = () => {
             board.remove();
             if (gameData.currentPlayer === pseudo) {
-              sock.emit("punto", {
-                action: "card",
-                game: data.req.game,
-                player: pseudo,
-              });
+              requestCard(data.req.game);
             }
           };
 
@@ -272,11 +308,7 @@ document.addEventListener("DOMContentLoaded", function () {
       }
       if (gameData.currentPlayer === pseudo) {
         // If the current player is the current one, request his card
-        sock.emit("punto", {
-          action: "card",
-          game: data.req.game,
-          player: pseudo,
-        });
+        requestCard(data.req.game);
       }
     }
   };
@@ -342,11 +374,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (data.next === pseudo) {
       // If the next player is the user -> request the card
-      sock.emit("punto", {
-        action: "card",
-        game: data.req.game,
-        player: pseudo,
-      });
+      requestCard(data.req.game);
     }
   };
 
@@ -387,7 +415,7 @@ document.addEventListener("DOMContentLoaded", function () {
    * @param {object} data
    */
   function handlePuntoEvent(data) {
-    console.dir(data);
+    // console.dir(data);
 
     if (!data || ((!data.req || !data.req.action) && !data.action)) {
       console.error("[punto] - Invalid data received from server ");
@@ -613,6 +641,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
       let index = Array.from(board.children).indexOf(card);
 
+      reminders.remove(id);
       sock.emit("punto", { action: "play", game: id, index, player: pseudo });
     };
     div.appendChild(board);
@@ -628,18 +657,19 @@ document.addEventListener("DOMContentLoaded", function () {
    * @param {number} id The game id
    */
   function deleteGameTab(id) {
+    reminders.remove(id);
     let div = document.querySelector(`#punto .game[data-gameid="${id}"]`);
     if (!div) {
       return;
     }
     div.remove();
     let radio = document.querySelector(`#punto input[id="radio-game-${id}"]`);
-    log(radio);
+    // log(radio);
     radio.remove();
     let label = document.querySelector(
       `#punto footer label[for="radio-game-${id}"]`
     );
-    log(label);
+    // log(label);
     label.remove();
     home_radio.checked = true;
   }
@@ -873,5 +903,18 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
     speaker.speak(new SpeechSynthesisUtterance(text));
+  }
+
+  /**
+   * Request the card of the current game
+   * @param {number} game
+   */
+  function requestCard(game) {
+    reminders.add(game, 1);
+    sock.emit("punto", {
+      action: "card",
+      game: game,
+      player: pseudo,
+    });
   }
 });
