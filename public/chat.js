@@ -2,7 +2,7 @@
 
 const { log, assert, error, table } = console;
 
-const number = [
+const numbers = [
   "one",
   "two",
   "three",
@@ -342,15 +342,15 @@ document.addEventListener("DOMContentLoaded", function () {
 
   PuntoHandler.play = function (data) {
     // Get the card element according to the game and the index
-    let card = document.querySelector(
-      `#punto .game.play[data-gameid="${
-        data.req.game
-      }"] > .board:not(.past) .card:nth-child(${data.req.index + 1})`
+
+    playCardAnimation(
+      data.req.game,
+      data.card,
+      data.req.index,
+      data.req.player
     );
 
     // Update the card
-    card.className = `card ${data.card.color} ${number[data.card.value - 1]}`;
-
     if (data.req.player === pseudo) {
       // If the user just played -> update his card
       updatePlayerCard(data.req.game);
@@ -358,17 +358,19 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (data.status === 1) {
       // If the round is finished
-      displayPopup(
-        "Terminé !",
-        `${
-          data.winner ? data.winner + " " : "Personne n'"
-        }a gagné cette manche !<br/> Cliquer sur le plateau pour continuer`,
-        "OK !"
-      );
+      setTimeout(() => {
+        displayPopup(
+          "Terminé !",
+          `${
+            data.winner ? data.winner + " " : "Personne n'"
+          }a gagné cette manche !<br/> Cliquer sur le plateau pour continuer`,
+          "OK !"
+        );
+        if (data.req.player === pseudo) {
+          sock.emit("punto", { action: "next", game: data.req.game });
+        }
+      }, 500);
 
-      if (data.req.player === pseudo) {
-        sock.emit("punto", { action: "next", game: data.req.game });
-      }
       return;
     }
 
@@ -466,7 +468,9 @@ document.addEventListener("DOMContentLoaded", function () {
     );
 
     if (card) {
-      cardElt.className = `card ${card.color} ${number[card.value - 1]} anim`;
+      cardElt.className = `card ${card.color} ${numbers[card.value - 1]} anim`;
+      cardElt.setAttribute("data-color", card.color);
+      cardElt.setAttribute("data-value", card.value);
     } else {
       cardElt.className = `card back`;
     }
@@ -572,6 +576,8 @@ document.addEventListener("DOMContentLoaded", function () {
       "div",
       {
         class: `card ${type} ${/^(none|back)$/.test(type) ? "" : color}`,
+        "data-color": color,
+        "data-value": type,
       },
       elt(
         "div",
@@ -928,6 +934,56 @@ document.addEventListener("DOMContentLoaded", function () {
       action: "card",
       game: game,
       player: pseudo,
+    });
+  }
+
+  async function playCardAnimation(game, card, index, player) {
+    // log(player);
+    let cardElt = document.querySelector(
+      `#punto .game.play[data-gameid="${game}"] > .player[data-pseudo="${player}"] .card `
+    );
+
+    log(card);
+
+    let { top: startY, left: startX } = cardElt.getBoundingClientRect();
+
+    let animatedCard = createCard(numbers[card.value - 1], card.color);
+    animatedCard.classList.add("animate");
+    animatedCard.style.top = `calc(${startY}px - 1rem)`;
+    animatedCard.style.left = `calc(${startX}px - 1rem)`;
+    animatedCard.style.height = cardElt.clientHeight + "px";
+    animatedCard.style.width = cardElt.clientWidth + "px";
+    animatedCard.setAttribute("data-color", card.color);
+    animatedCard.setAttribute("data-value", card.value);
+
+    document.body.appendChild(animatedCard);
+    cardElt.className = "card back";
+
+    let target = document.querySelector(
+      `#punto .game.play[data-gameid="${game}"] > .board:not(.past) .card:nth-child(${
+        index + 1
+      })`
+    );
+
+    let { top: endY, left: endX } = target.getBoundingClientRect();
+
+    animatedCard.style.top = `calc(${endY}px - 1rem)`;
+    animatedCard.style.left = `calc(${endX}px - 1rem)`;
+    animatedCard.style.height = target.clientHeight + "px";
+    animatedCard.style.width = target.clientWidth + "px";
+
+    setTimeout(() => {
+      animatedCard.remove();
+      target.className = `card ${card.color} ${numbers[card.value - 1]}`;
+      target.setAttribute("data-color", card.color);
+      target.setAttribute("data-value", card.value);
+      // log(cardElt);
+    }, 500);
+  }
+
+  function wait(ms) {
+    return new Promise((resolve) => {
+      setTimeout(resolve, ms);
     });
   }
 });

@@ -722,12 +722,22 @@ function isCardAround(gameId, index) {
   let board = games[gameId]._board;
   // console.table(board);
   for (let i of [1, 5, 6, 7]) {
-    if (!((i === 7 && index % 6 === 0) || (i === 5 && (index + 1) % 6 === 0))) {
+    if (
+      !(
+        ((i === 7 || i === 1) && index % 6 === 0) ||
+        (i === 5 && (index + 1) % 6 === 0)
+      )
+    ) {
       if (index - i >= 0 && board[index - i]) {
         return true;
       }
     }
-    if (!((i === 5 && index % 6 === 0) || (i === 7 && (index + 1) % 6 === 0))) {
+    if (
+      !(
+        (i === 5 && index % 6 === 0) ||
+        ((i === 7 || i === 1) && (index + 1) % 6 === 0)
+      )
+    ) {
       if (index + i <= 35 && board[index + i]) {
         return true;
       }
@@ -881,7 +891,12 @@ function browseColorRaw(board, index, visited, { direction, color }) {
 
     let resNeg = { rowLength: 0, color, sum: 0, max: 0 };
 
-    if (!((i === 7 && index % 6 === 0) || (i === 5 && (index + 1) % 6 === 0))) {
+    if (
+      !(
+        ((i === 7 || i === 1) && index % 6 === 0) ||
+        (i === 5 && (index + 1) % 6 === 0)
+      )
+    ) {
       resNeg = browseColorRaw(board, index - i, visited, {
         direction: i,
         color,
@@ -890,7 +905,12 @@ function browseColorRaw(board, index, visited, { direction, color }) {
 
     let resPos = { rowLength: 0, color, sum: 0, max: 0 };
 
-    if (!((i === 5 && index % 6 === 0) || (i === 7 && (index + 1) % 6 === 0))) {
+    if (
+      !(
+        (i === 5 && index % 6 === 0) ||
+        ((i === 7 || i === 1) && (index + 1) % 6 === 0)
+      )
+    ) {
       resPos = browseColorRaw(board, index + i, visited, {
         direction: i,
         color,
@@ -930,5 +950,3 @@ function getCurrentPlayer(gameId) {
     }
   }
 }
-
-function playAuto(gameId, player) {}

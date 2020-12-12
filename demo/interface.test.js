@@ -1,117 +1,116 @@
-const { Builder, By, Key, Keys } = require("selenium-webdriver");
-const { Driver } = require("selenium-webdriver/chrome");
+const { Builder, By, Key, Keys, logging } = require("selenium-webdriver");
 
 async function test() {
   const francois = await new Builder().forBrowser("firefox").build();
   await francois.manage().window().maximize();
   const { height, width } = await francois.manage().window().getSize();
-  await francois
-    .manage()
-    .window()
-    .setSize(width / 2, height);
-  await francois.manage().window().setPosition(0, 0);
-  await francois.get("localhost:8080");
-
-  // const fanny = await new Builder().forBrowser("firefox").build();
-  // await fanny
+  // await francois
   //   .manage()
   //   .window()
   //   .setSize(width / 2, height);
-  // await fanny
-  //   .manage()
-  //   .window()
-  //   .setPosition(width / 2, 0);
-  // await fanny.get("localhost:8080");
+  //await francois.manage().window().setPosition(0, 0);
+  await francois.get("localhost:8080");
 
-  // let btnlogin_fr = await francois.findElement(By.id("btnConnecter"));
-  // let inputPseudo_fr = await francois.findElement(By.id("pseudo"));
+  await newTab(francois); // 1
 
-  // let btnlogin_fa = await fanny.findElement(By.id("btnConnecter"));
-  // let inputPseudo_fa = await fanny.findElement(By.id("pseudo"));
+  await login(francois, "Franc<ss<<çois");
 
-  // let inputChat = await francois.findElement(By.id("monMessage"));
+  await switchTab(francois, 0);
 
-  // await wait(1000);
+  await login(francois, "Fannnnnn<<<<y");
 
-  // await type(inputPseudo_fa, "Fanny");
+  await createGame(francois);
 
-  // await wait(300);
+  await francois.sleep(1000);
 
-  // await btnlogin_fa.click();
+  await clickOn(francois, "/html/body/div[3]/div[2]/div[6]/aside/p[2]"); // Inviter
 
-  // await type(inputPseudo_fr, "franc<ç<ssois");
-
-  // await wait(500);
-
-  // await btnlogin_fr.click();
-
-  // await type(inputChat, "Les smileys :smiley<<<<<<grinn sont dispos");
-
-  // await wait(5000);
-
-  // //await francois.close();
-  // await fanny.close();
-
-  let frame = await francois.getWindowHandle();
-  console.log(frame);
-
-  await francois.executeScript("window.open('http://localhost:8080')");
-  frame = await francois.getAllWindowHandles();
-  frame = frame[1];
-  console.log(frame);
+  await switchTab(francois, 1);
 
   await francois.sleep(2000);
 
-  await francois.switchTo().window(String(frame));
+  await clickOn(francois, "/html/body/div[3]/div[2]/div[6]/section/div"); // Rejoindre
 
-  let btnlogin_fr = await francois.findElement(By.id("btnConnecter"));
-  let inputPseudo_fr = await francois.findElement(By.id("pseudo"));
-  let inputChat = await francois.findElement(By.id("monMessage"));
+  await francois.sleep(1000);
 
-  await type(inputPseudo_fr, "franc<ç<ssois");
+  await switchTab(francois, 0);
 
-  await wait(500);
+  await francois.sleep(1000);
 
-  await btnlogin_fr.click();
+  await clickOn(francois, "/html/body/div[3]/div[2]/div[6]/section/div"); // Lancer partie
 
-  await type(inputChat, "Les smileys :smiley<<<<<<grinn sont dispos");
+  let frame = 0;
+  let card = await francois.findElement(
+    By.xpath("/html/body/div[3]/div[2]/div[6]/div[1]/div")
+  );
+  if ((await card.getAttribute("class")).match("back")) {
+    await switchTab(francois, 1);
+    frame = 1;
+  }
+  while (true) {
+    await play(
+      francois,
+      "/html/body/div[3]/div[2]/div[6]/div[1]/div",
+      "/html/body/div[3]/div[2]/div[6]/div[3]"
+    );
+    frame = (frame + 1) % 2;
+    await francois.sleep(1000);
+    await switchTab(francois, frame);
+    await francois.sleep(1000);
+  }
 
-  await wait(5000);
-
-  await francois.switchTo().window(String(frame));
-  frame = await francois.getAllWindowHandles();
-
-  frame = frame[0];
-  await francois.switchTo().window(String(frame));
-
-  btnlogin_fr = await francois.findElement(By.id("btnConnecter"));
-  inputPseudo_fr = await francois.findElement(By.id("pseudo"));
-  inputChat = await francois.findElement(By.id("monMessage"));
-
-  await francois.sleep(2000);
-  await type(inputPseudo_fr, "franc<ç<ssois");
-
-  await wait(500);
-
-  await btnlogin_fr.click();
-
-  await type(inputChat, "Les smileys :smiley<<<<<<grinn sont dispos");
-
-  await wait(5000);
-
-  francois.getAllWindowHandles().then(console.log);
-
-  await francois.sleep(2000);
-
-  francois.close();
+  // await francois.close();
+  // await francois.sleep(1000);
+  // await francois.close();
 }
 
 test();
 
-function wait(time) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, time);
-  });
+// ************************************************
+//                    FUNCTIONS
+// ************************************************
+
+async function clickOn(driver, xpath) {
+  const e = await driver.findElement(By.xpath(xpath));
+  e.click();
+}
+
+async function createGame(driver) {
+  const btn = await driver.findElement(By.id("btnPuntoCreate"));
+  btn.click();
+  await driver.sleep(1000);
+}
+
+async function newTab(driver) {
+  const tabs = await driver.getAllWindowHandles();
+  // console.log(tabs);
+  await driver.executeScript("window.open('http://localhost:8080')");
+  await driver.sleep(1000);
+
+  frame = await driver.getAllWindowHandles();
+  frame = frame[tabs.length];
+  console.log(frame);
+
+  await driver.sleep(1000);
+
+  await driver.switchTo().window(String(frame));
+}
+
+async function switchTab(driver, number) {
+  const tabs = await driver.getAllWindowHandles();
+  const tab = tabs[number];
+  await driver.switchTo().window(String(tab));
+}
+
+async function login(driver, pseudo) {
+  const btnlogin_fr = await driver.findElement(By.id("btnConnecter"));
+  const inputPseudo_fr = await driver.findElement(By.id("pseudo"));
+  await driver.sleep(500);
+
+  await type(inputPseudo_fr, pseudo);
+  await driver.sleep(500);
+
+  await btnlogin_fr.click();
 }
 
 function type(elt, text) {
@@ -127,6 +126,176 @@ function type(elt, text) {
         clearInterval(int);
         resolve();
       }
-    }, 200);
+    }, 50);
   });
+}
+
+async function play(driver, cardXPath, boardXPath) {
+  card = await driver.findElement(By.xpath(cardXPath));
+  card = await htmlCardToCard(card);
+
+  let board = await htmlBoardToBoard(driver, boardXPath);
+
+  let index = playAI(board, card);
+  console.log("index choisi :" + index);
+
+  await clickOn(driver, `${boardXPath}/div[${index}]`);
+}
+
+async function htmlBoardToBoard(driver, boardxpath) {
+  let board = [];
+
+  for (const i of Array(36).keys()) {
+    const card = await driver.findElement(
+      By.xpath(`${boardxpath}/div[${i + 1}]`)
+    );
+    board.push(await htmlCardToCard(card));
+  }
+
+  //console.log(board.length, board);
+
+  return board;
+}
+
+async function htmlCardToCard(e) {
+  if ((await e.getAttribute("data-color")) == "undefined") {
+    return null;
+  }
+  return {
+    color: await e.getAttribute("data-color"),
+    value: await e.getAttribute("data-value"),
+  };
+}
+
+function playAI(board, card) {
+  const pb = [];
+  if (!board.some((c) => c !== null)) {
+    return Math.floor(1 + Math.random() * 35);
+  }
+  for (let i in board) {
+    if (board[i] === null || board[i].value < card.value) {
+      if (isCardAround(board, i)) {
+        for (let j in Array(1).fill(null)) {
+          pb.push(i);
+        }
+        if (isCardAround(board, i, card.color)) {
+          for (let j in Array(10).fill(null)) {
+            pb.push(i);
+          }
+        }
+        console.log(morethanTwo(board, i, card.color, 0, null));
+        if (morethanTwo(board, i, card.color, 0, null)) {
+          for (let j in Array(10000).fill(null)) {
+            pb.push(i);
+          }
+        }
+      }
+    }
+  }
+  console.log("Possibilité", pb);
+  return Number(pb[Math.floor(Math.random() * pb.length)]) + 1;
+}
+
+function isCardAround(board, index, color) {
+  // console.table(board);
+
+  index = Number(index);
+  for (let i of [1, 5, 6, 7]) {
+    if (
+      !(
+        ((i === 7 || i === 1) && index % 6 === 0) ||
+        (i === 5 && (index + 1) % 6 === 0)
+      )
+    ) {
+      if (
+        index - i >= 0 &&
+        ((color && board[index - i] && board[index - i].color === color) ||
+          (!color && board[index - i]))
+      ) {
+        console.log("ica : " + index + String(-i));
+        return true;
+      }
+    }
+    if (
+      !(
+        (i === 5 && index % 6 === 0) ||
+        ((i === 7 || i === 1) && (index + 1) % 6 === 0)
+      )
+    ) {
+      if (
+        index + i <= 35 &&
+        ((color && board[index + i] && board[index + i].color === color) ||
+          (!color && board[index + i]))
+      ) {
+        console.log("ica : " + index + String(i));
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+function morethanTwo(board, index, color, step = 0, direction) {
+  index = Number(index);
+  if (index < 0 || index > 35) {
+    return false;
+  }
+  console.log("mt2", index, color, step, direction);
+  if (step) {
+    if (!board[index] || board[index].color !== color) {
+      return false;
+    } else if (step === 2) {
+      console.log("moreThan2 : success !");
+      return true;
+    }
+  }
+
+  if (direction) {
+    console.log(direction);
+    if (
+      ((direction === -7 || direction === -1) && index % 6 === 0) ||
+      (direction === -5 && (index + 1) % 6 === 0) ||
+      (direction === 5 && index % 6 === 0) ||
+      ((direction === 7 || direction === 1) && (index + 1) % 6 === 0)
+    ) {
+      return false;
+    }
+    if (
+      board[index].color === color &&
+      morethanTwo(board, index + direction, color, step + 1, direction)
+    ) {
+      console.log("succ 1");
+      return true;
+    }
+
+    return false;
+  }
+
+  for (let i of [1, 5, 6, 7]) {
+    console.log(i);
+    if (
+      !(
+        ((i === 7 || i === 1) && index % 6 === 0) ||
+        (i === 5 && (index + 1) % 6 === 0)
+      )
+    ) {
+      if (morethanTwo(board, index - i, color, step + 1, -i)) {
+        console.log("succ 2");
+        return true;
+      }
+    }
+
+    if (
+      !(
+        (i === 5 && index % 6 === 0) ||
+        ((i === 7 || i === 1) && (index + 1) % 6 === 0)
+      )
+    ) {
+      if (morethanTwo(board, index + i, color, step + 1, i)) {
+        console.log("succ 3");
+        return true;
+      }
+    }
+  }
+  return false;
 }
