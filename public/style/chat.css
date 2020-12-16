@@ -32,7 +32,7 @@ body {
   --btn-bottom: grey;
   --btn-bg: rgb(229, 229, 229);
   --card-none: darkgrey;
-  --card-none-hover: #212121;
+  --card-none-hover: #7b7b7b;
 }
 
 body.dark {
@@ -118,7 +118,8 @@ body.dark {
   color: var(--text);
 }
 
-.button:active:not(.disabled) {
+.button:active:not(.disabled),
+.button.active:not(.disabled) {
   top: 0.4rem;
   padding-bottom: 0.1rem;
   margin-bottom: 1.2rem !important;
@@ -160,23 +161,27 @@ aside#menu label {
   cursor: pointer;
 }
 
-@media screen and (min-width: 800px) {
-  #menu label {
-    opacity: 0.3;
-    transition: all 400ms;
-    transform: scale(0.7);
-  }
-
-  body.dark #menu label {
-    opacity: 1;
-  }
-
-  #menu label:hover,
-  #menu label.hover {
-    opacity: 1;
-    transform: scale(1);
-  }
+/* @media screen and (min-width: 800px) { */
+#menu label {
+  opacity: 0.3;
+  transition: all 400ms;
+  transform: scale(0.7);
 }
+
+#menu label .card {
+  box-shadow: none;
+}
+
+body.dark #menu label {
+  opacity: 1;
+}
+
+#menu label:hover,
+#menu label.hover {
+  opacity: 1;
+  transform: scale(1);
+}
+/* } */
 
 #menu .card {
   height: 3.1rem;
@@ -380,7 +385,8 @@ span.chat-logo {
   right: 0;
 }
 
-#chat main p:not(.system):hover span[data-hours]::after {
+#chat main p:not(.system):hover span[data-hours]::after,
+#chat main p:not(.system).hover span[data-hours]::after {
   content: attr(data-hours) " ";
   width: max-content;
   height: max-content;
@@ -392,7 +398,8 @@ span.chat-logo {
   transform: translateY(-50%);
 }
 
-#chat main p.moi:hover span[data-hours]::after {
+#chat main p.moi:hover span[data-hours]::after,
+#chat main p.moi.hover span[data-hours]::after {
   left: -10rem;
 }
 
@@ -447,6 +454,12 @@ span.chat-logo {
 
 #chat label {
   font-size: 3rem;
+  cursor: pointer;
+  transition: transform 200ms;
+}
+
+#chat footer label:hover {
+  transform: scale(1.1);
 }
 
 #chat > footer input:first-of-type {
@@ -877,13 +890,15 @@ span.chat-logo {
   word-break: break-all;
 }
 
-#punto .game.launch aside p.others:hover::before {
+#punto .game.launch aside p.others:hover::before,
+#punto .game.launch aside p.others.hover::before {
   content: "+";
   position: absolute;
   left: -2rem;
 }
 
-#punto .game.launch aside p.pending:hover::before {
+#punto .game.launch aside p.pending:hover::before,
+#punto .game.launch aside p.pending.hover::before {
   content: "-";
   position: absolute;
   left: -2rem;

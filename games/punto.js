@@ -625,7 +625,7 @@ export function getGames(player) {
   if (!player) {
     return JSON.stringify(list);
   }
-  console.log(list);
+  // console.log(list);
   return JSON.stringify(list.filter((g) => Object.keys(games[g]).includes(player)));
 }
 
@@ -777,7 +777,7 @@ function isRoundOver(gameId) {
       }
     }
 
-    console.log(count);
+    //console.log(count);
 
     let max = -1,
       color,
