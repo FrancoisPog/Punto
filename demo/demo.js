@@ -150,6 +150,9 @@ async function test() {
   await launchGame(francois);
 
   await playGame3(francois, fanny);
+
+  // francois.close();
+  // fanny.close();
 }
 
 test();
@@ -244,18 +247,45 @@ async function newWindowDriver(driver) {
 async function playGame3(left, right) {
   let currentDriver = left;
   let currentTab = 0;
+  let currentGame = 1;
+  let hasLeft = 0;
 
   while (true) {
     try {
-      await currentDriver.findElement(By.css(".board.past"));
-      break;
+      let board = await currentDriver.findElement(By.css(".board.past"));
+      await currentDriver.sleep(1000);
+
+      await clickOn(left, '//*[@id="popup-btn"]');
+      await left.sleep(2000);
+      board = await left.findElement(By.css(".board.past"));
+      board.click();
+
+      await switchTab(left, (currentTab + 1) % 2);
+
+      await clickOn(left, '//*[@id="popup-btn"]');
+      await left.sleep(2000);
+      board = await left.findElement(By.css(".board.past"));
+      board.click();
+
+      await clickOn(right, '//*[@id="popup-btn"]');
+      await right.sleep(2000);
+      board = await right.findElement(By.css(".board.past"));
+      board.click();
+
+      try {
+        await left.findElement(By.css("input#radio_home:checked"));
+        break;
+      } catch (e) {
+        currentGame++;
+        continue;
+      }
     } catch (e) {
       let card = await currentDriver.findElement(By.xpath("/html/body/div[3]/div[2]/div[6]/div[1]/div"));
       while ((await card.getAttribute("class")).match("back")) {
-        if (currentDriver === left && currentTab === 0) {
+        if (currentDriver === left && currentTab === 0 && !hasLeft) {
           currentTab = 1;
           switchTab(left, 1);
-        } else if (currentDriver === left && currentTab === 1) {
+        } else if (currentDriver === left && (hasLeft || currentTab === 1)) {
           currentDriver = right;
         } else {
           currentDriver = left;
@@ -265,7 +295,17 @@ async function playGame3(left, right) {
         card = await currentDriver.findElement(By.xpath("/html/body/div[3]/div[2]/div[6]/div[1]/div"));
       }
 
-      await play(currentDriver, "/html/body/div[3]/div[2]/div[6]/div[1]/div", "/html/body/div[3]/div[2]/div[6]/div[4]");
+      if (currentDriver === left && currentTab === 1 && currentGame == 2 && Math.random() > 0.8) {
+        clickOn(currentDriver, "//*[@id='quitGame']");
+        hasLeft = true;
+        currentTab = 0;
+      } else {
+        await play(
+          currentDriver,
+          "/html/body/div[3]/div[2]/div[6]/div[1]/div",
+          "/html/body/div[3]/div[2]/div[6]/div[4]"
+        );
+      }
       await left.sleep(1000);
     }
   }

@@ -3,3 +3,5 @@ docs/
 .nyc_output/
 coverage/
 logs/
+.prettierrc
+.todo

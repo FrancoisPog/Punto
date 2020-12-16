@@ -2,7 +2,7 @@
 
 ## Web avancé - François Poguet
 
-Normalement les dépendances sont bien référencés dans le `package.json`, donc un `npm i` devrait suffire.
+Normalement les dépendances sont bien référencées dans le `package.json`, donc un `npm i` devrait suffire.
 
 ```json
 "dependencies": {
