@@ -1,7 +1,7 @@
-const { Builder, By, Key, Keys, logging } = require("selenium-webdriver");
+const { Builder, By, Key, Keys } = require("selenium-webdriver");
 
 async function test() {
-  const francois = await new Builder().forBrowser("firefox").build();
+  const francois = await createDriver();
   await francois.manage().window().maximize();
   const { height, width } = await francois.manage().window().getSize();
   // await francois
@@ -15,9 +15,13 @@ async function test() {
 
   await login(francois, "Franc<ss<<çois");
 
+  await francois.sleep(1000);
+
   await switchTab(francois, 0);
 
   await login(francois, "Fannnnnn<<<<y");
+
+  await mouseOn(francois, "html body.connected aside#menu label#sound-label", 2000);
 
   await createGame(francois);
 
@@ -33,29 +37,77 @@ async function test() {
 
   await francois.sleep(1000);
 
+  await francois
+    .manage()
+    .window()
+    .setSize(width / 2, height);
+  await francois.manage().window().setPosition(0, 0);
+  await francois.sleep(1000);
+
+  await clickOn(francois, "/html/body/aside/label[2]/span");
+  await francois.sleep(1000);
+
   await switchTab(francois, 0);
+  await francois.sleep(1000);
+
+  await clickOn(francois, "/html/body/aside/label[2]/span");
 
   await francois.sleep(1000);
 
+  const fanny = await createDriver();
+
+  await fanny
+    .manage()
+    .window()
+    .setSize(width / 2, height);
+  await fanny
+    .manage()
+    .window()
+    .setPosition(width / 2, 0);
+
+  await fanny.get("http://localhost:8080");
+
+  await login(fanny, "Fanoche");
+  await clickOn(fanny, "/html/body/aside/label[2]/span");
+
+  await clickOn(francois, "/html/body/div[3]/div[2]/div[6]/aside/p[3]"); // Inviter
+
+  await francois.sleep(1000);
+
+  await clickOn(fanny, "/html/body/div[3]/div[2]/div[6]/section/div"); // Rejoindre
+
+  await fanny.sleep(1000);
+
   await clickOn(francois, "/html/body/div[3]/div[2]/div[6]/section/div"); // Lancer partie
 
-  let frame = 0;
-  let card = await francois.findElement(
-    By.xpath("/html/body/div[3]/div[2]/div[6]/div[1]/div")
-  );
-  if ((await card.getAttribute("class")).match("back")) {
-    await switchTab(francois, 1);
-    frame = 1;
-  }
+  await fanny.sleep(1000);
+  await francois.sleep(1000);
+
+  let currentDriver = francois;
+  let currentTab = 0;
+
   while (true) {
-    await play(
-      francois,
-      "/html/body/div[3]/div[2]/div[6]/div[1]/div",
-      "/html/body/div[3]/div[2]/div[6]/div[3]"
-    );
-    frame = (frame + 1) % 2;
-    await francois.sleep(1000);
-    await switchTab(francois, frame);
+    let card = await currentDriver.findElement(By.xpath("/html/body/div[3]/div[2]/div[6]/div[1]/div"));
+    while ((await card.getAttribute("class")).match("back")) {
+      if (currentDriver === francois && currentTab === 0) {
+        console.log("c1");
+        currentTab = 1;
+        switchTab(francois, 1);
+      } else if (currentDriver === francois && currentTab === 1) {
+        console.log("c2");
+        currentDriver = fanny;
+      } else {
+        console.log("c3");
+        currentDriver = francois;
+        currentTab = 0;
+        switchTab(francois, 0);
+      }
+      card = await currentDriver.findElement(By.xpath("/html/body/div[3]/div[2]/div[6]/div[1]/div"));
+    }
+
+    console.log("turn");
+
+    await play(currentDriver, "/html/body/div[3]/div[2]/div[6]/div[1]/div", "/html/body/div[3]/div[2]/div[6]/div[4]");
     await francois.sleep(1000);
   }
 
@@ -69,6 +121,18 @@ test();
 // ************************************************
 //                    FUNCTIONS
 // ************************************************
+
+async function mouseOn(driver, css, time = 1000) {
+  await driver.executeScript(`document.querySelector('${css}').classList.add('hover')`);
+
+  await driver.sleep(time);
+
+  await driver.executeScript(`document.querySelector('${css}').classList.remove('hover')`);
+}
+
+async function createDriver() {
+  return await new Builder().forBrowser("firefox").build();
+}
 
 async function clickOn(driver, xpath) {
   const e = await driver.findElement(By.xpath(xpath));
@@ -146,13 +210,9 @@ async function htmlBoardToBoard(driver, boardxpath) {
   let board = [];
 
   for (const i of Array(36).keys()) {
-    const card = await driver.findElement(
-      By.xpath(`${boardxpath}/div[${i + 1}]`)
-    );
+    const card = await driver.findElement(By.xpath(`${boardxpath}/div[${i + 1}]`));
     board.push(await htmlCardToCard(card));
   }
-
-  //console.log(board.length, board);
 
   return board;
 }
@@ -201,31 +261,19 @@ function isCardAround(board, index, color) {
 
   index = Number(index);
   for (let i of [1, 5, 6, 7]) {
-    if (
-      !(
-        ((i === 7 || i === 1) && index % 6 === 0) ||
-        (i === 5 && (index + 1) % 6 === 0)
-      )
-    ) {
+    if (!(((i === 7 || i === 1) && index % 6 === 0) || (i === 5 && (index + 1) % 6 === 0))) {
       if (
         index - i >= 0 &&
-        ((color && board[index - i] && board[index - i].color === color) ||
-          (!color && board[index - i]))
+        ((color && board[index - i] && board[index - i].color === color) || (!color && board[index - i]))
       ) {
         console.log("ica : " + index + String(-i));
         return true;
       }
     }
-    if (
-      !(
-        (i === 5 && index % 6 === 0) ||
-        ((i === 7 || i === 1) && (index + 1) % 6 === 0)
-      )
-    ) {
+    if (!((i === 5 && index % 6 === 0) || ((i === 7 || i === 1) && (index + 1) % 6 === 0))) {
       if (
         index + i <= 35 &&
-        ((color && board[index + i] && board[index + i].color === color) ||
-          (!color && board[index + i]))
+        ((color && board[index + i] && board[index + i].color === color) || (!color && board[index + i]))
       ) {
         console.log("ica : " + index + String(i));
         return true;
@@ -260,10 +308,7 @@ function morethanTwo(board, index, color, step = 0, direction) {
     ) {
       return false;
     }
-    if (
-      board[index].color === color &&
-      morethanTwo(board, index + direction, color, step + 1, direction)
-    ) {
+    if (board[index].color === color && morethanTwo(board, index + direction, color, step + 1, direction)) {
       console.log("succ 1");
       return true;
     }
@@ -273,24 +318,14 @@ function morethanTwo(board, index, color, step = 0, direction) {
 
   for (let i of [1, 5, 6, 7]) {
     console.log(i);
-    if (
-      !(
-        ((i === 7 || i === 1) && index % 6 === 0) ||
-        (i === 5 && (index + 1) % 6 === 0)
-      )
-    ) {
+    if (!(((i === 7 || i === 1) && index % 6 === 0) || (i === 5 && (index + 1) % 6 === 0))) {
       if (morethanTwo(board, index - i, color, step + 1, -i)) {
         console.log("succ 2");
         return true;
       }
     }
 
-    if (
-      !(
-        (i === 5 && index % 6 === 0) ||
-        ((i === 7 || i === 1) && (index + 1) % 6 === 0)
-      )
-    ) {
+    if (!((i === 5 && index % 6 === 0) || ((i === 7 || i === 1) && (index + 1) % 6 === 0))) {
       if (morethanTwo(board, index + i, color, step + 1, i)) {
         console.log("succ 3");
         return true;

@@ -313,9 +313,7 @@ export function nextRound(gameId) {
         game[getPlayers(gameId)[0]].colors.push(restColor);
         game[getPlayers(gameId)[1]].colors.push(newColors[0]);
 
-        game._removedCards = game._removedCards.filter(
-          (c) => c.color !== restColor
-        );
+        game._removedCards = game._removedCards.filter((c) => c.color !== restColor);
         game._neutralColor = null;
       }
     } else if (nbPlayers === 3) {
@@ -343,10 +341,7 @@ export function nextRound(gameId) {
         if (
           board[index] &&
           board[index].color === restColor &&
-          !game._removedCards.some(
-            (c) =>
-              c.color === board[index].color && c.value === board[index].value
-          )
+          !game._removedCards.some((c) => c.color === board[index].color && c.value === board[index].value)
         ) {
           neutralCards.push(board[index]);
         }
@@ -387,9 +382,7 @@ export function nextRound(gameId) {
       // console.log(`Cartes ${color} pour ${p}`);
       for (let i = 0; i < 18; ++i) {
         let card = { color, value: 1 + (i % 9) };
-        let index = removedCards.findIndex(
-          (c) => c.color === card.color && c.value === card.value
-        );
+        let index = removedCards.findIndex((c) => c.color === card.color && c.value === card.value);
         if (index !== -1) {
           //console.log("remove!!! "+card.color+""+card.value);
           removedCards.splice(index, 1);
@@ -504,10 +497,7 @@ export function play(gameId, player, index) {
       index = 0;
     }
     for (let i in board) {
-      if (
-        (board[i] === null && isCardAround(gameId, i)) ||
-        (board[i] !== null && board[i].value < card.value)
-      ) {
+      if ((board[i] === null && isCardAround(gameId, i)) || (board[i] !== null && board[i].value < card.value)) {
         index = i;
         break;
       }
@@ -586,9 +576,7 @@ export function gameResult(gameId) {
   if (getPlayers(gameId).length < 2) {
     res = { winner: getPlayers(gameId).pop() };
   } else {
-    let winner = getPlayers(gameId).filter(
-      (p) => game[p].victories.length === 2
-    )[0];
+    let winner = getPlayers(gameId).filter((p) => game[p].victories.length === 2)[0];
 
     res = { winner };
   }
@@ -638,9 +626,7 @@ export function getGames(player) {
     return JSON.stringify(list);
   }
   console.log(list);
-  return JSON.stringify(
-    list.filter((g) => Object.keys(games[g]).includes(player))
-  );
+  return JSON.stringify(list.filter((g) => Object.keys(games[g]).includes(player)));
 }
 
 // *************************************************
@@ -722,22 +708,12 @@ function isCardAround(gameId, index) {
   let board = games[gameId]._board;
   // console.table(board);
   for (let i of [1, 5, 6, 7]) {
-    if (
-      !(
-        ((i === 7 || i === 1) && index % 6 === 0) ||
-        (i === 5 && (index + 1) % 6 === 0)
-      )
-    ) {
+    if (!(((i === 7 || i === 1) && index % 6 === 0) || (i === 5 && (index + 1) % 6 === 0))) {
       if (index - i >= 0 && board[index - i]) {
         return true;
       }
     }
-    if (
-      !(
-        (i === 5 && index % 6 === 0) ||
-        ((i === 7 || i === 1) && (index + 1) % 6 === 0)
-      )
-    ) {
+    if (!((i === 5 && index % 6 === 0) || ((i === 7 || i === 1) && (index + 1) % 6 === 0))) {
       if (index + i <= 35 && board[index + i]) {
         return true;
       }
@@ -774,9 +750,7 @@ function isRoundOver(gameId) {
     // console.log(neutralColor);
   }
 
-  if (
-    !canPlay(game._board, JSON.parse(getCard(gameId, getCurrentPlayer(gameId))))
-  ) {
+  if (!canPlay(game._board, JSON.parse(getCard(gameId, getCurrentPlayer(gameId))))) {
     let visited = {};
     let count = {};
     for (let index in game._board) {
@@ -870,7 +844,7 @@ function browseColorRaw(board, index, visited, { direction, color }) {
   }
 
   if (!direction) {
-    direction = [1, 5, 6, 7]; // TODO revoir direction en fonction de si on est sur un bord
+    direction = [1, 5, 6, 7];
   } else {
     direction = [direction];
   }
@@ -891,12 +865,7 @@ function browseColorRaw(board, index, visited, { direction, color }) {
 
     let resNeg = { rowLength: 0, color, sum: 0, max: 0 };
 
-    if (
-      !(
-        ((i === 7 || i === 1) && index % 6 === 0) ||
-        (i === 5 && (index + 1) % 6 === 0)
-      )
-    ) {
+    if (!(((i === 7 || i === 1) && index % 6 === 0) || (i === 5 && (index + 1) % 6 === 0))) {
       resNeg = browseColorRaw(board, index - i, visited, {
         direction: i,
         color,
@@ -905,12 +874,7 @@ function browseColorRaw(board, index, visited, { direction, color }) {
 
     let resPos = { rowLength: 0, color, sum: 0, max: 0 };
 
-    if (
-      !(
-        (i === 5 && index % 6 === 0) ||
-        ((i === 7 || i === 1) && (index + 1) % 6 === 0)
-      )
-    ) {
+    if (!((i === 5 && index % 6 === 0) || ((i === 7 || i === 1) && (index + 1) % 6 === 0))) {
       resPos = browseColorRaw(board, index + i, visited, {
         direction: i,
         color,

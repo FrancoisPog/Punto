@@ -2,17 +2,7 @@
 
 const { log, assert, error, table } = console;
 
-const numbers = [
-  "one",
-  "two",
-  "three",
-  "four",
-  "five",
-  "six",
-  "seven",
-  "eight",
-  "nine",
-];
+const numbers = ["one", "two", "three", "four", "five", "six", "seven", "eight", "nine"];
 
 document.addEventListener("DOMContentLoaded", function () {
   // Socket connection
@@ -97,15 +87,9 @@ document.addEventListener("DOMContentLoaded", function () {
         speak(
           reminders.types[type]
             .replaceAll("%PLAYER_NAME%", pseudo)
-            .replaceAll(
-              "%HOURS%",
-              `${now.getHours()} heures et ${now.getMinutes()} minutes`
-            )
+            .replaceAll("%HOURS%", `${now.getHours()} heures et ${now.getMinutes()} minutes`)
         );
-        reminders.add(
-          game,
-          type === Object.keys(reminders.types).length ? type : type + 1
-        );
+        reminders.add(game, type === Object.keys(reminders.types).length ? type : type + 1);
       }, 10000);
     },
     remove: (game) => {
@@ -205,9 +189,7 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("radio_home").checked = true;
     document.getElementById("userPseudo").textContent = pseudo;
     updateList(clientsList);
-    speak(
-      `Bienvenue ${pseudo}, la température extérieur est de 3 degrés, bon voyage avec Pounto Airlines !`
-    );
+    speak(`Bienvenue ${pseudo}, la température extérieur est de 3 degrés, bon voyage avec Pounto Airlines !`);
   });
 
   sock.on("liste", updateList);
@@ -277,9 +259,7 @@ document.addEventListener("DOMContentLoaded", function () {
         // If it's the first turn in a round
         if (gameData.nthRound > 1) {
           // If it's not the first round
-          let board = document.querySelector(
-            `#punto .game[data-gameid="${data.req.game}"] .board`
-          );
+          let board = document.querySelector(`#punto .game[data-gameid="${data.req.game}"] .board`);
           // Set the current board as past
           board.classList.add("past");
           // Set the handler for click on the board -> remove it and display the new round
@@ -294,9 +274,7 @@ document.addEventListener("DOMContentLoaded", function () {
           // TODO Insert the new tab at the same place
           deleteGameTab(data.req.game);
           createLaunchedGame(data.req.game, gameData);
-          let gameFrame = document.querySelector(
-            `#punto .game[data-gameid="${data.req.game}"]`
-          );
+          let gameFrame = document.querySelector(`#punto .game[data-gameid="${data.req.game}"]`);
           gameFrame.appendChild(board);
 
           return;
@@ -343,12 +321,7 @@ document.addEventListener("DOMContentLoaded", function () {
   PuntoHandler.play = function (data) {
     // Get the card element according to the game and the index
 
-    playCardAnimation(
-      data.req.game,
-      data.card,
-      data.req.index,
-      data.req.player
-    );
+    playCardAnimation(data.req.game, data.card, data.req.index, data.req.player);
 
     // Update the card
     if (data.req.player === pseudo) {
@@ -397,14 +370,8 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   PuntoHandler.winner = function (data) {
-    displayPopup(
-      `Terminé !`,
-      `${data.winner} gagne cette partie !`,
-      "Terminer !"
-    );
-    let board = document.querySelector(
-      `#punto .game[data-gameid="${data.req.game}"] .board`
-    );
+    displayPopup(`Terminé !`, `${data.winner} gagne cette partie !`, "Terminer !");
+    let board = document.querySelector(`#punto .game[data-gameid="${data.req.game}"] .board`);
     board.classList.add("past");
     board.onclick = () => {
       quitGame();
@@ -429,11 +396,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (data.status < 0) {
       //console.error("Non zero status !");
-      displayPopup(
-        `Attention !`,
-        `${data.content ? data.content : "Erreur server"}`,
-        "Compris !"
-      );
+      displayPopup(`Attention !`, `${data.content ? data.content : "Erreur server"}`, "Compris !");
       return;
     }
 
@@ -448,9 +411,7 @@ document.addEventListener("DOMContentLoaded", function () {
    * Quit the game of selected frame
    */
   function quitGame() {
-    let gameTab = document.querySelector(
-      "#punto input[name='punto-frame']:checked + .game"
-    );
+    let gameTab = document.querySelector("#punto input[name='punto-frame']:checked + .game");
     if (gameTab) {
       let id = gameTab.dataset.gameid;
       sock.emit("punto", { action: "remove", game: id, player: pseudo });
@@ -527,9 +488,7 @@ document.addEventListener("DOMContentLoaded", function () {
           game: id,
           player: target.textContent,
         });
-        speak(
-          `Vous venez de supprimer l'invitation pour ${target.textContent} !`
-        );
+        speak(`Vous venez de supprimer l'invitation pour ${target.textContent} !`);
       } else if (target.classList.contains("others")) {
         // click on a user -> invite him
         sock.emit("punto", {
@@ -590,11 +549,7 @@ document.addEventListener("DOMContentLoaded", function () {
       elt(
         "div",
         { class: "back" },
-        elt(
-          "p",
-          { class: "punto-logo" },
-          ..."punto".split("").map((l) => elt("span", {}, l))
-        )
+        elt("p", { class: "punto-logo" }, ..."punto".split("").map((l) => elt("span", {}, l)))
       )
     );
   }
@@ -617,10 +572,7 @@ document.addEventListener("DOMContentLoaded", function () {
           class: "player ",
           "data-pseudo": player,
           "data-color1": gameData.players[player].colors[0],
-          "data-color2":
-            Object.keys(gameData.players).length === 2
-              ? gameData.players[player].colors[1]
-              : "",
+          "data-color2": Object.keys(gameData.players).length === 2 ? gameData.players[player].colors[1] : "",
         },
         elt("h2", {}, player),
         createCard("back")
@@ -648,10 +600,7 @@ document.addEventListener("DOMContentLoaded", function () {
       let card = e.target;
       if (card.classList.contains("dot")) {
         card = card.parentElement.parentElement;
-      } else if (
-        card.classList.contains("front") ||
-        card.classList.contains("back")
-      ) {
+      } else if (card.classList.contains("front") || card.classList.contains("back")) {
         card = card.parentElement;
       }
       if (!card.classList.contains("card")) {
@@ -664,11 +613,7 @@ document.addEventListener("DOMContentLoaded", function () {
       sock.emit("punto", { action: "play", game: id, index, player: pseudo });
     };
     div.appendChild(board);
-    speak(
-      `La partie avec ${players
-        .filter((p) => p !== pseudo)
-        .join(", ")} vient d'être lancée`
-    );
+    speak(`La partie avec ${players.filter((p) => p !== pseudo).join(", ")} vient d'être lancée`);
   }
 
   /**
@@ -685,9 +630,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let radio = document.querySelector(`#punto input[id="radio-game-${id}"]`);
     // log(radio);
     radio.remove();
-    let label = document.querySelector(
-      `#punto footer label[for="radio-game-${id}"]`
-    );
+    let label = document.querySelector(`#punto footer label[for="radio-game-${id}"]`);
     // log(label);
     label.remove();
     home_radio.checked = true;
@@ -725,9 +668,7 @@ document.addEventListener("DOMContentLoaded", function () {
    */
   function updatePlayersList(id, players) {
     // Get the aside of the game element
-    const aside = document.querySelector(
-      `#punto .game.launch[data-gameid='${id}'] aside`
-    );
+    const aside = document.querySelector(`#punto .game.launch[data-gameid='${id}'] aside`);
     if (!aside) {
       return;
     }
@@ -736,9 +677,7 @@ document.addEventListener("DOMContentLoaded", function () {
     let others = list.filter((p) => !Object.keys(players).includes(p));
 
     // Format the players objects
-    players = Object.keys(players).map(
-      (p) => new Object({ name: p, status: players[p].status })
-    );
+    players = Object.keys(players).map((p) => new Object({ name: p, status: players[p].status }));
 
     /// Get the ready and pending players
     let ready = players.filter((p) => p.status === "ready");
@@ -776,9 +715,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function updatePlayersStatus(game, data) {
     for (let p in data.players) {
       if (data.players[p].status === "left") {
-        let player = document.querySelector(
-          `#punto .game[data-gameid="${game}"] .player[data-pseudo="${p}"]`
-        );
+        let player = document.querySelector(`#punto .game[data-gameid="${game}"] .player[data-pseudo="${p}"]`);
         if (player) {
           player.classList.add("left");
         }
@@ -960,9 +897,7 @@ document.addEventListener("DOMContentLoaded", function () {
     cardElt.className = "card back";
 
     let target = document.querySelector(
-      `#punto .game.play[data-gameid="${game}"] > .board:not(.past) .card:nth-child(${
-        index + 1
-      })`
+      `#punto .game.play[data-gameid="${game}"] > .board:not(.past) .card:nth-child(${index + 1})`
     );
 
     let { top: endY, left: endX } = target.getBoundingClientRect();

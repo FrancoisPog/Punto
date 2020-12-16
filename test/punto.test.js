@@ -513,30 +513,15 @@ describe("Respect for the rules of the game", function () {
 
         if (NB_PLAYERS === 2) {
           strictEqual(pCards.length, 36);
-          strictEqual(
-            pCards.filter((card) => card.color === pcolors[0]).length,
-            18
-          );
-          strictEqual(
-            pCards.filter((card) => card.color === pcolors[1]).length,
-            18
-          );
+          strictEqual(pCards.filter((card) => card.color === pcolors[0]).length, 18);
+          strictEqual(pCards.filter((card) => card.color === pcolors[1]).length, 18);
         } else if (NB_PLAYERS === 3) {
           strictEqual(pCards.length, 24);
-          strictEqual(
-            pCards.filter((card) => card.color === pcolors[0]).length,
-            18
-          );
-          strictEqual(
-            pCards.filter((card) => card.color === lastColor).length,
-            6
-          );
+          strictEqual(pCards.filter((card) => card.color === pcolors[0]).length, 18);
+          strictEqual(pCards.filter((card) => card.color === lastColor).length, 6);
         } else {
           strictEqual(pCards.length, 18);
-          strictEqual(
-            pCards.filter((card) => card.color === pcolors[0]).length,
-            18
-          );
+          strictEqual(pCards.filter((card) => card.color === pcolors[0]).length, 18);
         }
       }
 
@@ -741,9 +726,7 @@ describe("Respect for the rules of the game", function () {
 
       let data = JSON.parse(gameData(gameId));
       let player = data.currentPlayer;
-      let winner = Object.keys(data.players).filter((p) =>
-        data.players[p].colors.includes("red")
-      )[0];
+      let winner = Object.keys(data.players).filter((p) => data.players[p].colors.includes("red"))[0];
 
       getAllCards(gameId, player).push(Card("red", 8));
 
@@ -806,9 +789,7 @@ describe("Respect for the rules of the game", function () {
       let data = JSON.parse(gameData(gameId));
       //console.dir(data, { depth: null });
       let player = data.currentPlayer;
-      let winner = Object.keys(data.players).filter((p) =>
-        data.players[p].colors.includes("blue")
-      )[0];
+      let winner = Object.keys(data.players).filter((p) => data.players[p].colors.includes("blue"))[0];
       getAllCards(gameId, player).push(Card("blue", 1));
 
       if (NB_PLAYERS !== 2) {
@@ -874,9 +855,7 @@ describe("Respect for the rules of the game", function () {
       getAllCards(gameId, player).push(Card("green", 3));
       //console.log(data.players);
 
-      let winner = Object.keys(data.players).filter((p) =>
-        data.players[p].colors.includes("green")
-      )[0];
+      let winner = Object.keys(data.players).filter((p) => data.players[p].colors.includes("green"))[0];
 
       if (NB_PLAYERS !== 2) {
         deepStrictEqual(play(gameId, player, 20), { reason: "4cards", winner });
@@ -1080,9 +1059,7 @@ describe("Respect for the rules of the game", function () {
         for (let i of Array(18).keys()) {
           let value = (i % 9) + 1;
           let card = Card(color, value);
-          let index = tmp.findIndex(
-            (c) => c.color === color && c.value === value
-          );
+          let index = tmp.findIndex((c) => c.color === color && c.value === value);
           if (index === -1) {
             game[p].cards.push(card);
             continue;
@@ -1162,9 +1139,7 @@ describe("Respect for the rules of the game", function () {
         for (let i of Array(18).keys()) {
           let value = (i % 9) + 1;
           let card = Card(color, value);
-          let index = tmp.findIndex(
-            (c) => c.color === color && c.value === value
-          );
+          let index = tmp.findIndex((c) => c.color === color && c.value === value);
           if (index === -1) {
             game[p].cards.push(card);
             continue;
@@ -1245,9 +1220,7 @@ describe("Respect for the rules of the game", function () {
     for (let i of Array(18).keys()) {
       let value = (i % 9) + 1;
       let card = Card("green", value);
-      let index = tmp.findIndex(
-        (c) => c.color === "green" && c.value === value
-      );
+      let index = tmp.findIndex((c) => c.color === "green" && c.value === value);
       if (index === -1) {
         greenCards.push(card);
         continue;
@@ -1264,9 +1237,7 @@ describe("Respect for the rules of the game", function () {
         for (let i of Array(18).keys()) {
           let value = (i % 9) + 1;
           let card = Card(color, value);
-          let index = tmp.findIndex(
-            (c) => c.color === color && c.value === value
-          );
+          let index = tmp.findIndex((c) => c.color === color && c.value === value);
           if (index === -1) {
             game[p].cards.push(card);
             continue;
@@ -1348,19 +1319,13 @@ describe("Respect for the rules of the game", function () {
     board[23] = Card("orange", 4);
     board[27] = Card("green", 7);
 
-    let tmp = [
-      ...board.slice().filter((e) => e !== null),
-      Card("blue", 5),
-      Card("green", 8),
-    ];
+    let tmp = [...board.slice().filter((e) => e !== null), Card("blue", 5), Card("green", 8)];
 
     let greenCards = [];
     for (let i of Array(18).keys()) {
       let value = (i % 9) + 1;
       let card = Card("green", value);
-      let index = tmp.findIndex(
-        (c) => c.color === "green" && c.value === value
-      );
+      let index = tmp.findIndex((c) => c.color === "green" && c.value === value);
       if (index === -1) {
         greenCards.push(card);
         continue;
@@ -1377,9 +1342,7 @@ describe("Respect for the rules of the game", function () {
         for (let i of Array(18).keys()) {
           let value = (i % 9) + 1;
           let card = Card(color, value);
-          let index = tmp.findIndex(
-            (c) => c.color === color && c.value === value
-          );
+          let index = tmp.findIndex((c) => c.color === color && c.value === value);
           if (index === -1) {
             game[p].cards.push(card);
             continue;
@@ -1474,21 +1437,14 @@ describe("Respect for the rules of the game", function () {
     board[23] = Card("orange", 4);
     board[27] = Card("green", 7);
 
-    let tmp = [
-      ...board.slice().filter((e) => e !== null),
-      Card("blue", 5),
-      Card("green", 8),
-      Card("red", 2),
-    ];
+    let tmp = [...board.slice().filter((e) => e !== null), Card("blue", 5), Card("green", 8), Card("red", 2)];
 
     for (let p of ["Luffy", "Zoro", "Sanji", "Usopp"]) {
       for (let color of game[p].colors) {
         for (let i of Array(18).keys()) {
           let value = (i % 9) + 1;
           let card = Card(color, value);
-          let index = tmp.findIndex(
-            (c) => c.color === color && c.value === value
-          );
+          let index = tmp.findIndex((c) => c.color === color && c.value === value);
           if (index === -1) {
             game[p].cards.push(card);
             continue;
@@ -1582,21 +1538,14 @@ describe("Respect for the rules of the game", function () {
     board[23] = Card("orange", 4);
     board[27] = Card("green", 7);
 
-    let tmp = [
-      ...board.slice().filter((e) => e !== null),
-      Card("blue", 5),
-      Card("green", 8),
-      Card("red", 2),
-    ];
+    let tmp = [...board.slice().filter((e) => e !== null), Card("blue", 5), Card("green", 8), Card("red", 2)];
 
     for (let p of ["Luffy", "Zoro", "Sanji", "Usopp"]) {
       for (let color of game[p].colors) {
         for (let i of Array(18).keys()) {
           let value = (i % 9) + 1;
           let card = Card(color, value);
-          let index = tmp.findIndex(
-            (c) => c.color === color && c.value === value
-          );
+          let index = tmp.findIndex((c) => c.color === color && c.value === value);
           if (index === -1) {
             game[p].cards.push(card);
             continue;
@@ -1643,8 +1592,7 @@ describe("Respect for the rules of the game", function () {
       for (let color of game[p].colors) {
         for (let i of Array(9).keys()) {
           strictEqual(
-            (p === "Zoro" && color === "red" && i + 1 === 2) ||
-              (p === "Luffy" && color === "blue" && i + 1 === 7)
+            (p === "Zoro" && color === "red" && i + 1 === 2) || (p === "Luffy" && color === "blue" && i + 1 === 7)
               ? 1
               : 2,
             game[p].cards.reduce((count, card) => {
@@ -1694,21 +1642,14 @@ describe("Respect for the rules of the game", function () {
     board[23] = Card("orange", 4);
     board[27] = Card("green", 7);
 
-    let tmp = [
-      ...board.slice().filter((e) => e !== null),
-      Card("blue", 5),
-      Card("green", 8),
-      Card("red", 2),
-    ];
+    let tmp = [...board.slice().filter((e) => e !== null), Card("blue", 5), Card("green", 8), Card("red", 2)];
 
     for (let p of ["Luffy", "Zoro", "Sanji", "Usopp"]) {
       for (let color of game[p].colors) {
         for (let i of Array(18).keys()) {
           let value = (i % 9) + 1;
           let card = Card(color, value);
-          let index = tmp.findIndex(
-            (c) => c.color === color && c.value === value
-          );
+          let index = tmp.findIndex((c) => c.color === color && c.value === value);
           if (index === -1) {
             game[p].cards.push(card);
             continue;
@@ -1768,21 +1709,14 @@ describe("Respect for the rules of the game", function () {
     board[27] = Card("green", 7);
     board[28] = Card("blue", 5);
 
-    let tmp = [
-      ...board.slice().filter((e) => e !== null),
-      Card("blue", 5),
-      Card("green", 8),
-      Card("red", 2),
-    ];
+    let tmp = [...board.slice().filter((e) => e !== null), Card("blue", 5), Card("green", 8), Card("red", 2)];
 
     for (let p of ["Luffy", "Zoro"]) {
       for (let color of game[p].colors) {
         for (let i of Array(18).keys()) {
           let value = (i % 9) + 1;
           let card = Card(color, value);
-          let index = tmp.findIndex(
-            (c) => c.color === color && c.value === value
-          );
+          let index = tmp.findIndex((c) => c.color === color && c.value === value);
           if (index === -1) {
             game[p].cards.push(card);
             continue;
@@ -1906,9 +1840,7 @@ describe("Game result", function () {
 
       let data = JSON.parse(gameData(gameId));
       let player = data.currentPlayer;
-      var winner = Object.keys(data.players).filter((p) =>
-        data.players[p].colors.includes("red")
-      )[0];
+      var winner = Object.keys(data.players).filter((p) => data.players[p].colors.includes("red"))[0];
 
       getAllCards(gameId, player).push(Card("red", 8));
 
