@@ -329,6 +329,8 @@ document.addEventListener("DOMContentLoaded", function () {
       updatePlayerCard(data.req.game);
     }
 
+    console.log(data);
+
     if (data.status === 1) {
       // If the round is finished
       setTimeout(() => {
@@ -339,10 +341,12 @@ document.addEventListener("DOMContentLoaded", function () {
           }a gagné cette manche !<br/> Cliquer sur le plateau pour continuer`,
           "OK !"
         );
-        if (data.req.player === pseudo) {
-          sock.emit("punto", { action: "next", game: data.req.game });
-        }
       }, 500);
+
+      if (data.haveToNext === pseudo) {
+        console.log("next");
+        sock.emit("punto", { action: "next", game: data.req.game });
+      }
 
       return;
     }
@@ -360,6 +364,7 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   PuntoHandler.next = function (data) {
+    console.log(data);
     if (data.status > 0) {
       // If the game is finished -> request the winner
       sock.emit("punto", { action: "winner", game: data.req.game });
@@ -370,7 +375,7 @@ document.addEventListener("DOMContentLoaded", function () {
   };
 
   PuntoHandler.winner = function (data) {
-    displayPopup(`Terminé !`, `${data.winner} gagne cette partie !`, "Terminer !");
+    setTimeout(() => displayPopup(`Terminé !`, `${data.winner} gagne cette partie !`, "Terminer !"), 500);
     let board = document.querySelector(`#punto .game[data-gameid="${data.req.game}"] .board`);
     board.classList.add("past");
     board.onclick = () => {
@@ -880,7 +885,7 @@ document.addEventListener("DOMContentLoaded", function () {
       `#punto .game.play[data-gameid="${game}"] > .player[data-pseudo="${player}"] .card `
     );
 
-    log(card);
+    // log(card);
 
     let { top: startY, left: startX } = cardElt.getBoundingClientRect();
 

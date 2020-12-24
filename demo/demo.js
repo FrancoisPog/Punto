@@ -1,182 +1,190 @@
 const { Builder, By, Key } = require("selenium-webdriver");
 
-async function test() {
+async function demo() {
+  let begin = Date.now();
   // INIT
-  const francois = await createDriver();
-  await francois.manage().window().maximize();
+  const left = await createDriver();
+  await left.manage().window().maximize();
 
-  await francois.get("localhost:8080");
+  await left.get("localhost:8080");
 
-  await newTab(francois); // 1
+  await newTab(left); // 1
 
-  await login(francois, "Franc<ss<<çois");
+  await login(left, "Pierre");
 
-  await francois.sleep(1000);
+  await left.sleep(1100);
 
-  await switchTab(francois, 0);
+  await switchTab(left, 0);
 
-  await login(francois, "Simon<<<<<Luc");
+  await login(left, "Paul");
 
-  let fanny = await newWindowDriver(francois);
+  await left.sleep(2000);
 
-  await login(fanny, "Fannnny");
+  let right = await newWindowDriver(left);
+
+  await login(right, "Jack<ques");
 
   // CHAT + SMILEYS
 
-  await francois.sleep(1000);
+  await left.sleep(1100);
 
-  await SendMessage(fanny, "Salut tout le monde !$");
+  await SendMessage(right, "Salut tout le monde !$");
 
-  await francois.sleep(1000);
+  await left.sleep(1100);
 
-  await SendMessage(francois, "Salut ! :smiley<^^|$ $", 50);
+  await SendMessage(left, "Salut ! :smiley<^^|$ $", 500);
 
-  await francois.sleep(1000);
+  await left.sleep(1100);
 
-  await switchTab(francois, 1);
+  await switchTab(left, 1);
 
-  await SendMessage(francois, "T'es qui ? :woozy<<<<<think$ $", 40);
+  await SendMessage(left, "T'es qui ? :woozy<<<<<think$ $", 400);
 
-  await francois.sleep(1000);
+  await left.sleep(1100);
 
-  await simulateEventStart(francois, "html body.connected div#chat main p.moi", "hover");
+  await simulateEventStart(left, "html body.connected div#chat main p.moi", "hover");
 
-  await francois.sleep(3000);
+  await left.sleep(3000);
 
   // MESSAGE HOUR
 
-  await simulateEventStop(francois, "html body.connected div#chat main p.moi", "hover");
+  await simulateEventStop(left, "html body.connected div#chat main p.moi", "hover");
 
-  await simulateEventStart(francois, "html body.connected div#chat main p:nth-of-type(4)", "hover");
+  await simulateEventStart(left, "html body.connected div#chat main p:nth-of-type(4)", "hover");
 
-  await francois.sleep(2000);
+  await left.sleep(2000);
 
-  await simulateEventStop(francois, "html body.connected div#chat main p:nth-of-type(4)", "hover");
+  await simulateEventStop(left, "html body.connected div#chat main p:nth-of-type(4)", "hover");
 
-  await francois.sleep(1000);
+  await left.sleep(1100);
 
   // MP
 
-  await SendMessage(fanny, "@François J'ai un secret pour toi !$");
+  await SendMessage(right, "@Pierre J'ai un secret pour toi !$");
 
-  await francois.sleep(3000);
+  await left.sleep(3000);
 
-  await switchTab(francois, 0);
+  await switchTab(left, 0);
 
   // SOUND
 
-  await francois.sleep(2000);
+  await left.sleep(2000);
 
-  await toggleMenuOption(francois, 4);
+  await toggleMenuOption(left, 4);
 
-  await SendMessage(francois, "Vous m'entendez ? :ear:$");
+  await SendMessage(left, "Vous m'entendez ? :ear:$");
 
-  await francois.sleep(4000);
+  await left.sleep(4000);
 
-  await SendMessage(fanny, "oh que oui ... :disapp$ $");
+  await SendMessage(right, "oh que oui ... :disapp$ $");
 
-  await francois.sleep(2000);
+  await left.sleep(2000);
 
-  await toggleMenuOption(francois, 4);
+  await toggleMenuOption(left, 4);
 
   // USERS LIST
 
-  await simulateEventStart(francois, "html body.connected div#chat footer label:first-child", "hover");
+  await simulateEventStart(left, "html body.connected div#chat footer label:first-child", "hover");
 
-  await francois.sleep(3000);
+  await left.sleep(3000);
 
-  await clickOn(francois, "/html/body/div[2]/footer/label");
+  await clickOn(left, "/html/body/div[2]/footer/label");
 
-  await francois.sleep(4000);
+  await left.sleep(4000);
 
-  await clickOn(francois, "/html/body/div[2]/footer/label");
+  await clickOn(left, "/html/body/div[2]/footer/label");
 
-  await francois.sleep(2000);
+  await left.sleep(2000);
 
-  await simulateEventStop(francois, "html body.connected div#chat footer label:first-child", "hover");
+  await simulateEventStop(left, "html body.connected div#chat footer label:first-child", "hover");
 
   // FULL SCREEN PRESENTATION
 
-  await francois.manage().window().maximize();
-  await fanny.manage().window().setPosition(4000, 0);
+  await left.manage().window().maximize();
+  await right.manage().window().setPosition(4000, 0);
 
-  await toggleMenuOption(francois, 3);
+  await left.sleep(1000);
 
-  francois.sleep(2000);
+  await toggleMenuOption(left, 3);
 
-  await toggleMenuOption(francois, 3);
-  await toggleMenuOption(francois, 2);
+  await left.sleep(2000);
 
-  await createGame(francois);
+  await toggleMenuOption(left, 3);
+  await toggleMenuOption(left, 2);
 
-  await francois.sleep(2000);
+  await left.sleep(2000);
 
-  await invitePlayer(francois, 2);
+  await createGame(left);
 
-  await francois.sleep(1500);
+  await left.sleep(2000);
 
-  await invitePlayer(francois, 3);
+  await invitePlayer(left, 2);
 
-  await switchTab(francois, 1);
+  await left.sleep(2000);
 
-  await francois.sleep(1000);
+  await invitePlayer(left, 3);
 
-  await joinGame(francois);
+  await switchTab(left, 1);
 
-  await toggleMenuOption(francois, 2);
+  await left.sleep(1100);
 
-  await toggleMenuOption(fanny, 2);
-  let { width, height } = await francois.manage().window().getSize();
+  await joinGame(left);
 
-  await francois
+  await toggleMenuOption(left, 2);
+
+  await toggleMenuOption(right, 2);
+  let { width, height } = await left.manage().window().getSize();
+
+  await left
     .manage()
     .window()
     .setSize(width / 2, height);
-  await francois.manage().window().setPosition(0, 0);
+  await left.manage().window().setPosition(0, 0);
 
-  await francois.sleep(1000);
+  await left.sleep(1100);
 
-  await fanny
+  await right
     .manage()
     .window()
     .setPosition(width / 2, 0);
 
-  await fanny.sleep(1000);
+  await right.sleep(1100);
 
-  await joinGame(fanny);
+  await joinGame(right);
 
-  await francois.sleep(1000);
+  await left.sleep(1100);
 
-  await launchGame(francois);
+  await launchGame(left);
 
-  await playGame3(francois, fanny);
+  await playGame3(left, right);
 
-  await fanny.close();
+  await right.close();
 
-  await francois.manage().window().maximize();
+  await left.manage().window().maximize();
 
-  await francois.sleep(1000);
+  await left.sleep(1100);
 
-  await toggleMenuOption(francois, 2);
+  await toggleMenuOption(left, 2);
 
-  await francois.sleep(1000);
+  await left.sleep(1100);
 
-  await toggleMenuOption(francois, 1);
+  await toggleMenuOption(left, 1);
 
-  await francois.sleep(1000);
+  await left.sleep(1100);
 
-  await SendMessage(francois, "C'est terminé, merci pour votre attention ! :grin$$");
+  await SendMessage(left, "C'est terminé, merci pour votre attention ! :grin$$");
 
-  await francois.sleep(5000);
+  await left.sleep(5000);
 
-  await francois.close();
+  await left.close();
 
-  await switchTab(francois, 0);
+  await switchTab(left, 0);
 
-  await francois.close();
+  await left.close();
+  console.log((Date.now() - begin) / 60000);
 }
 
-test();
+demo();
 
 // ************************************************
 //                    FUNCTIONS
@@ -189,7 +197,7 @@ async function launchGame(driver) {
 
   await clickOn(driver, `/html/body/div[3]/div[2]/div[6]/section/div`);
 
-  await driver.sleep(1000);
+  await driver.sleep(1100);
 }
 
 async function joinGame(driver) {
@@ -199,7 +207,7 @@ async function joinGame(driver) {
 
   await clickOn(driver, `/html/body/div[3]/div[2]/div[6]/section/div`);
 
-  await driver.sleep(1000);
+  await driver.sleep(1100);
 }
 
 async function invitePlayer(driver, playerIndex) {
@@ -209,7 +217,7 @@ async function invitePlayer(driver, playerIndex) {
     "hover"
   );
 
-  await driver.sleep(1000);
+  await driver.sleep(1100);
 
   await clickOn(driver, `/html/body/div[3]/div[2]/div[6]/aside/p[${playerIndex}]`);
 
@@ -219,7 +227,7 @@ async function invitePlayer(driver, playerIndex) {
     "hover"
   );
 
-  await driver.sleep(1000);
+  await driver.sleep(1100);
 }
 
 async function toggleMenuOption(driver, option) {
@@ -233,27 +241,27 @@ async function toggleMenuOption(driver, option) {
 
   await clickOn(driver, "/html/body");
 
-  await driver.sleep(1000);
+  await driver.sleep(1100);
 
   await simulateEventStop(driver, `html body.connected aside#menu label:nth-of-type(${option})`, "hover");
 }
 
 async function newWindowDriver(driver) {
   const { height, width } = await driver.manage().window().getSize();
-  toggleMenuOption(driver, 3);
+  await toggleMenuOption(driver, 3);
   await driver
     .manage()
     .window()
     .setSize(width / 2, height);
   await driver.manage().window().setPosition(0, 0);
 
-  await driver.sleep(1000);
+  await driver.sleep(1100);
 
   const res = await createDriver();
 
   await res.get("http://localhost:8080");
 
-  toggleMenuOption(driver, 3);
+  await toggleMenuOption(driver, 3);
   await res
     .manage()
     .window()
@@ -271,13 +279,17 @@ async function playGame3(left, right) {
   let currentDriver = left;
   let currentTab = 0;
   let currentGame = 1;
-  let hasLeft = 0;
+  let hasLeft = false;
   let nbPlayers = 3;
 
   while (true) {
     try {
+      await currentDriver.sleep(800);
       let board = await currentDriver.findElement(By.css(".board.past"));
-      await currentDriver.sleep(1000);
+
+      await currentDriver.sleep(1100);
+
+      // console.log("loop", hasLeft, currentTab);
 
       if (!hasLeft) {
         await switchTab(left, 1);
@@ -312,6 +324,7 @@ async function playGame3(left, right) {
         continue;
       }
     } catch (e) {
+      //console.log(e);
       let card = await currentDriver.findElement(By.xpath("/html/body/div[3]/div[2]/div[6]/div[1]/div"));
       while ((await card.getAttribute("class")).match("back")) {
         if (currentDriver === left && currentTab === 0 && !hasLeft) {
@@ -334,7 +347,7 @@ async function playGame3(left, right) {
       );
 
       if (currentDriver === left && currentTab === 1 && currentGame >= 2 && Math.random() > 0.3) {
-        await left.sleep(1000);
+        await left.sleep(1100);
         clickOn(currentDriver, "//*[@id='quitGame']");
         await left.sleep(4000);
         hasLeft = true;
@@ -342,7 +355,7 @@ async function playGame3(left, right) {
         switchTab(left, 0);
       }
 
-      await left.sleep(1000);
+      await left.sleep(1100);
     }
   }
 }
@@ -367,20 +380,20 @@ async function clickOn(driver, xpath) {
 async function createGame(driver) {
   const btn = await driver.findElement(By.id("btnPuntoCreate"));
   btn.click();
-  await driver.sleep(1000);
+  await driver.sleep(1100);
 }
 
 async function newTab(driver) {
   const tabs = await driver.getAllWindowHandles();
   // console.log(tabs);
   await driver.executeScript("window.open('http://localhost:8080')");
-  await driver.sleep(1000);
+  await driver.sleep(1100);
 
   frame = await driver.getAllWindowHandles();
   frame = frame[tabs.length];
   //console.log(frame);
 
-  await driver.sleep(1000);
+  await driver.sleep(1100);
 
   await driver.switchTo().window(String(frame));
 }

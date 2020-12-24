@@ -495,10 +495,15 @@ function playGamePunto(req, socket) {
 
   let data = JSON.parse(Punto.gameData(req.game));
   let card = data.board[req.index];
+  let randomPlayer = null;
   for (let p in data.players) {
     if (!clients[p] || data.players[p].status === "left") {
       continue;
     }
+    if (!randomPlayer) {
+      randomPlayer = p;
+    }
+    console.log(randomPlayer);
     // Send the game status after this turn to all players
     clients[p].emit("punto", {
       req,
@@ -506,6 +511,7 @@ function playGamePunto(req, socket) {
       card,
       next: finished ? null : data.currentPlayer,
       winner: finished ? res.winner : null,
+      haveToNext: randomPlayer,
     });
   }
 
@@ -726,9 +732,13 @@ function playAutoPunto(player, game) {
   let finished = typeof res === "object";
 
   let card = boardAfter[index];
+  let randomPlayer = null;
   for (let p in data.players) {
     if (!clients[p] || data.players[p].status === "left") {
       continue;
+    }
+    if (!randomPlayer) {
+      randomPlayer = p;
     }
     // Send the game status after this turn to all players
     clients[p].emit("punto", {
@@ -742,6 +752,7 @@ function playAutoPunto(player, game) {
       card,
       next: finished ? null : data.currentPlayer,
       winner: finished ? res.winner : null,
+      haveToNext: randomPlayer,
     });
   }
 
